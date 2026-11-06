@@ -1,0 +1,5388 @@
+{
+  "clickhouse": {
+    "objects": [
+      {
+        "database": "analytics",
+        "name": "data_freshness",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.data_freshness (`measurement_id` UInt32, `target_name` String, `ip_version` String, `latest_measurement_at` Nullable(DateTime64(3, 'Europe/Kyiv')), `data_age_seconds` Nullable(Int64), `measurements_last_5h` UInt64, `probes_observed_last_5h` UInt64, `data_status` String) AS SELECT m.measurement_id, m.target_name, m.ip_version, if(p.measurements = 0, NULL, toTimeZone(p.latest_at, 'Europe/Kyiv')) AS latest_measurement_at, if(p.measurements = 0, NULL, dateDiff('second', p.latest_at, now())) AS data_age_seconds, p.measurements AS measurements_last_5h, p.probes AS probes_observed_last_5h, multiIf(p.measurements = 0, 'Немає даних', dateDiff('second', p.latest_at, now()) > 900, 'Дані застаріли', 'Дані надходять') AS data_status FROM analytics.measurement_directory AS m LEFT JOIN (SELECT msm_id, max(event_time) AS latest_at, count() AS measurements, uniqExact(prb_id) AS probes FROM monitoring.ping_results FINAL WHERE event_time >= (now() - toIntervalHour(5)) GROUP BY msm_id) AS p ON p.msm_id = m.measurement_id"
+      },
+      {
+        "database": "analytics",
+        "name": "kpi_directory",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.kpi_directory (`kpi_code` String, `kpi_name` String, `unit` String) AS SELECT 'measurement_count' AS kpi_code, 'Кількість вимірювань' AS kpi_name, 'шт.' AS unit UNION ALL SELECT 'probes_observed' AS kpi_code, 'Спостережувані зонди' AS kpi_name, 'зондів' AS unit UNION ALL SELECT 'packets_sent' AS kpi_code, 'Надіслано пакетів' AS kpi_name, 'пакетів' AS unit UNION ALL SELECT 'packets_received' AS kpi_code, 'Отримано пакетів' AS kpi_name, 'пакетів' AS unit UNION ALL SELECT 'packets_lost' AS kpi_code, 'Втрачено пакетів' AS kpi_name, 'пакетів' AS unit UNION ALL SELECT 'packet_loss_pct' AS kpi_code, 'Втрата пакетів' AS kpi_name, '%' AS unit UNION ALL SELECT 'avg_rtt_ms' AS kpi_code, 'Середня затримка' AS kpi_name, 'мс' AS unit UNION ALL SELECT 'min_rtt_ms' AS kpi_code, 'Мінімальна затримка' AS kpi_name, 'мс' AS unit UNION ALL SELECT 'max_rtt_ms' AS kpi_code, 'Максимальна затримка' AS kpi_name, 'мс' AS unit UNION ALL SELECT 'successful_measurements_pct' AS kpi_code, 'Вимірювання з відповіддю' AS kpi_name, '%' AS unit UNION ALL SELECT 'high_loss_measurements' AS kpi_code, 'Вимірювання із втратою понад 50%' AS kpi_name, 'шт.' AS unit UNION ALL SELECT 'no_reply_measurements' AS kpi_code, 'Вимірювання без відповіді' AS kpi_name, 'шт.' AS unit"
+      },
+      {
+        "database": "analytics",
+        "name": "measurement_directory",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.measurement_directory (`measurement_id` UInt32, `target_name` String, `target_hostname` String, `ip_version` String, `address_family` UInt8, `interval_seconds` UInt32) AS SELECT toUInt32(1001) AS measurement_id, 'K-root' AS target_name, 'k.root-servers.net' AS target_hostname, 'IPv4' AS ip_version, toUInt8(4) AS address_family, toUInt32(240) AS interval_seconds UNION ALL SELECT toUInt32(2001) AS measurement_id, 'K-root' AS target_name, 'k.root-servers.net' AS target_hostname, 'IPv6' AS ip_version, toUInt8(6) AS address_family, toUInt32(240) AS interval_seconds UNION ALL SELECT toUInt32(1004) AS measurement_id, 'F-root' AS target_name, 'f.root-servers.net' AS target_hostname, 'IPv4' AS ip_version, toUInt8(4) AS address_family, toUInt32(240) AS interval_seconds UNION ALL SELECT toUInt32(2004) AS measurement_id, 'F-root' AS target_name, 'f.root-servers.net' AS target_hostname, 'IPv6' AS ip_version, toUInt8(6) AS address_family, toUInt32(240) AS interval_seconds"
+      },
+      {
+        "database": "analytics",
+        "name": "measurements_live",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.measurements_live (`measured_at` DateTime64(3, 'Europe/Kyiv'), `probe_id` UInt32, `measurement_id` UInt32, `ip_version` String, `target_name` String, `destination_address` Nullable(String), `source_address` Nullable(String), `provider_asn` UInt32, `provider_name` String, `country_code` LowCardinality(String), `latitude` Nullable(Float64), `longitude` Nullable(Float64), `packets_sent` UInt16, `packets_received` UInt16, `packets_lost` Int32, `packet_loss_pct` Float32, `avg_rtt_ms` Nullable(Float32), `min_rtt_ms` Nullable(Float32), `max_rtt_ms` Nullable(Float32), `source_mode` LowCardinality(String), `event_id` String) AS SELECT toTimeZone(p.event_time, 'Europe/Kyiv') AS measured_at, p.prb_id AS probe_id, p.msm_id AS measurement_id, concat('IPv', toString(p.af)) AS ip_version, coalesce(nullIf(m.target_name, ''), p.dst_name, 'Unknown') AS target_name, p.dst_addr AS destination_address, p.src_addr AS source_address, if(p.af = 6, d.asn_v6, d.asn_v4) AS provider_asn, if(provider_asn = 0, 'Невідомий ASN', concat('AS', toString(provider_asn))) AS provider_name, d.country AS country_code, d.latitude, d.longitude, p.sent AS packets_sent, p.rcvd AS packets_received, p.sent - p.rcvd AS packets_lost, p.loss_pct AS packet_loss_pct, p.rtt_avg AS avg_rtt_ms, p.rtt_min AS min_rtt_ms, p.rtt_max AS max_rtt_ms, p.source_mode, p.event_id FROM monitoring.ping_results AS p FINAL LEFT JOIN (SELECT * FROM monitoring.probe_directory FINAL) AS d ON d.probe_id = p.prb_id LEFT JOIN analytics.measurement_directory AS m ON m.measurement_id = p.msm_id WHERE (p.af IN (4, 6)) AND (p.event_time >= (now() - toIntervalHour(5)))"
+      },
+      {
+        "database": "analytics",
+        "name": "network_5minutes",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.network_5minutes (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `target_name` String, `ip_version` String, `measurement_count` UInt64, `probes_observed` UInt64, `packets_sent` UInt64, `packets_received` UInt64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float32), `max_rtt_ms` Nullable(Float32), `successful_measurements_pct` Float64, `no_reply_measurements` UInt64) AS SELECT toStartOfFiveMinutes(measured_at) AS period_start, measurement_id, target_name, ip_version, count() AS measurement_count, uniqExact(probe_id) AS probes_observed, sum(q.packets_sent) AS packets_sent, sum(q.packets_received) AS packets_received, (100. * (packets_sent - packets_received)) / nullIf(packets_sent, 0) AS packet_loss_pct, avg(q.avg_rtt_ms) AS avg_rtt_ms, min(q.min_rtt_ms) AS min_rtt_ms, max(q.max_rtt_ms) AS max_rtt_ms, (100. * countIf(q.packets_received > 0)) / count() AS successful_measurements_pct, countIf(q.packets_received = 0) AS no_reply_measurements FROM analytics.measurements_live AS q GROUP BY period_start, measurement_id, target_name, ip_version"
+      },
+      {
+        "database": "analytics",
+        "name": "network_daily",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.network_daily (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `ip_version` String, `measurement_count` UInt64, `probes_observed` UInt64, `packets_sent` UInt64, `packets_received` UInt64, `packets_lost` Int64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float64), `max_rtt_ms` Nullable(Float64), `successful_measurements_pct` Nullable(Float64), `high_loss_measurements` UInt64, `no_reply_measurements` UInt64, `target_name` String) AS SELECT q.*, coalesce(nullIf(m.target_name, ''), concat('RIPE ', toString(q.measurement_id))) AS target_name FROM (SELECT toDateTime(h.day, 'Europe/Kyiv') AS period_start, h.msm_id AS measurement_id, concat('IPv', toString(h.af)) AS ip_version, sum(h.samples) AS measurement_count, uniqExactIf(h.probe_id, h.samples > 0) AS probes_observed, sum(h.sent) AS packets_sent, sum(h.received) AS packets_received, packets_sent - packets_received AS packets_lost, (100. * packets_lost) / nullIf(packets_sent, 0) AS packet_loss_pct, sum(h.rtt_sum) / nullIf(sum(h.rtt_count), 0) AS avg_rtt_ms, min(h.rtt_min) AS min_rtt_ms, max(h.rtt_max) AS max_rtt_ms, (100. * (measurement_count - sum(h.full_loss_samples))) / nullIf(measurement_count, 0) AS successful_measurements_pct, sum(h.loss_samples) AS high_loss_measurements, sum(h.full_loss_samples) AS no_reply_measurements FROM monitoring.daily_metrics AS h FINAL WHERE (h.af IN (4, 6)) AND (h.msm_id > 0) AND (h.samples > 0) AND 1 GROUP BY period_start, h.msm_id, h.af) AS q LEFT JOIN analytics.measurement_directory AS m ON m.measurement_id = q.measurement_id"
+      },
+      {
+        "database": "analytics",
+        "name": "network_daily_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.network_daily_kpi (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `target_name` String, `ip_version` String, `kpi_code` String, `kpi_name` String, `unit` String, `value` Nullable(Float64)) AS SELECT q.period_start, q.measurement_id, q.target_name, q.ip_version, metric.1 AS kpi_code, metric.2 AS kpi_name, metric.3 AS unit, metric.4 AS value FROM analytics.network_daily AS q ARRAY JOIN [('measurement_count', 'Кількість вимірювань', 'шт.', toNullable(toFloat64(q.measurement_count))), ('probes_observed', 'Спостережувані зонди', 'зондів', toNullable(toFloat64(q.probes_observed))), ('packets_sent', 'Надіслано пакетів', 'пакетів', toNullable(toFloat64(q.packets_sent))), ('packets_received', 'Отримано пакетів', 'пакетів', toNullable(toFloat64(q.packets_received))), ('packets_lost', 'Втрачено пакетів', 'пакетів', toNullable(toFloat64(q.packets_lost))), ('packet_loss_pct', 'Втрата пакетів', '%', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', 'Середня затримка', 'мс', toNullable(toFloat64(q.avg_rtt_ms))), ('min_rtt_ms', 'Мінімальна затримка', 'мс', toNullable(toFloat64(q.min_rtt_ms))), ('max_rtt_ms', 'Максимальна затримка', 'мс', toNullable(toFloat64(q.max_rtt_ms))), ('successful_measurements_pct', 'Вимірювання з відповіддю', '%', toNullable(toFloat64(q.successful_measurements_pct))), ('high_loss_measurements', 'Вимірювання із втратою понад 50%', 'шт.', toNullable(toFloat64(q.high_loss_measurements))), ('no_reply_measurements', 'Вимірювання без відповіді', 'шт.', toNullable(toFloat64(q.no_reply_measurements)))] AS metric"
+      },
+      {
+        "database": "analytics",
+        "name": "network_hourly",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.network_hourly (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `ip_version` String, `measurement_count` UInt64, `probes_observed` UInt64, `packets_sent` UInt64, `packets_received` UInt64, `packets_lost` Int64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float64), `max_rtt_ms` Nullable(Float64), `successful_measurements_pct` Nullable(Float64), `high_loss_measurements` UInt64, `no_reply_measurements` UInt64, `target_name` String) AS SELECT q.*, coalesce(nullIf(m.target_name, ''), concat('RIPE ', toString(q.measurement_id))) AS target_name FROM (SELECT toTimeZone(h.hour_start, 'Europe/Kyiv') AS period_start, h.msm_id AS measurement_id, concat('IPv', toString(h.af)) AS ip_version, sum(h.samples) AS measurement_count, uniqExactIf(h.probe_id, h.samples > 0) AS probes_observed, sum(h.sent) AS packets_sent, sum(h.received) AS packets_received, packets_sent - packets_received AS packets_lost, (100. * packets_lost) / nullIf(packets_sent, 0) AS packet_loss_pct, sum(h.rtt_sum) / nullIf(sum(h.rtt_count), 0) AS avg_rtt_ms, min(h.rtt_min) AS min_rtt_ms, max(h.rtt_max) AS max_rtt_ms, (100. * (measurement_count - sum(h.full_loss_samples))) / nullIf(measurement_count, 0) AS successful_measurements_pct, sum(h.loss_samples) AS high_loss_measurements, sum(h.full_loss_samples) AS no_reply_measurements FROM monitoring.hourly_metrics AS h FINAL WHERE (h.af IN (4, 6)) AND (h.msm_id > 0) AND (h.samples > 0) AND (h.hour_start >= (now() - toIntervalHour(48))) AND (h.hour_start < toStartOfHour(now())) GROUP BY period_start, h.msm_id, h.af) AS q LEFT JOIN analytics.measurement_directory AS m ON m.measurement_id = q.measurement_id"
+      },
+      {
+        "database": "analytics",
+        "name": "network_hourly_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.network_hourly_kpi (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `target_name` String, `ip_version` String, `kpi_code` String, `kpi_name` String, `unit` String, `value` Nullable(Float64)) AS SELECT q.period_start, q.measurement_id, q.target_name, q.ip_version, metric.1 AS kpi_code, metric.2 AS kpi_name, metric.3 AS unit, metric.4 AS value FROM analytics.network_hourly AS q ARRAY JOIN [('measurement_count', 'Кількість вимірювань', 'шт.', toNullable(toFloat64(q.measurement_count))), ('probes_observed', 'Спостережувані зонди', 'зондів', toNullable(toFloat64(q.probes_observed))), ('packets_sent', 'Надіслано пакетів', 'пакетів', toNullable(toFloat64(q.packets_sent))), ('packets_received', 'Отримано пакетів', 'пакетів', toNullable(toFloat64(q.packets_received))), ('packets_lost', 'Втрачено пакетів', 'пакетів', toNullable(toFloat64(q.packets_lost))), ('packet_loss_pct', 'Втрата пакетів', '%', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', 'Середня затримка', 'мс', toNullable(toFloat64(q.avg_rtt_ms))), ('min_rtt_ms', 'Мінімальна затримка', 'мс', toNullable(toFloat64(q.min_rtt_ms))), ('max_rtt_ms', 'Максимальна затримка', 'мс', toNullable(toFloat64(q.max_rtt_ms))), ('successful_measurements_pct', 'Вимірювання з відповіддю', '%', toNullable(toFloat64(q.successful_measurements_pct))), ('high_loss_measurements', 'Вимірювання із втратою понад 50%', 'шт.', toNullable(toFloat64(q.high_loss_measurements))), ('no_reply_measurements', 'Вимірювання без відповіді', 'шт.', toNullable(toFloat64(q.no_reply_measurements)))] AS metric"
+      },
+      {
+        "database": "analytics",
+        "name": "probe_directory",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.probe_directory (`probe_id` UInt32, `country_code` LowCardinality(String), `ipv4_provider_asn` UInt32, `ipv6_provider_asn` UInt32, `latitude` Nullable(Float64), `longitude` Nullable(Float64), `atlas_status` String) AS SELECT probe_id, country AS country_code, asn_v4 AS ipv4_provider_asn, asn_v6 AS ipv6_provider_asn, latitude, longitude, status AS atlas_status FROM monitoring.probe_directory FINAL"
+      },
+      {
+        "database": "analytics",
+        "name": "probe_events_live",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.probe_events_live (`event_at` DateTime64(3, 'Europe/Kyiv'), `probe_id` UInt32, `connection_event` LowCardinality(String), `event_id` String) AS SELECT toTimeZone(event_time, 'Europe/Kyiv') AS event_at, prb_id AS probe_id, event AS connection_event, event_id FROM monitoring.probe_events FINAL WHERE event_time >= (now() - toIntervalHour(5))"
+      },
+      {
+        "database": "analytics",
+        "name": "probes_daily",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.probes_daily (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `ip_version` String, `provider_asn` UInt32, `probe_id` UInt32, `measurement_count` UInt64, `probes_observed` UInt64, `packets_sent` UInt64, `packets_received` UInt64, `packets_lost` Int64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float64), `max_rtt_ms` Nullable(Float64), `successful_measurements_pct` Nullable(Float64), `high_loss_measurements` UInt64, `no_reply_measurements` UInt64, `provider_name` String, `target_name` String) AS SELECT q.*, if(q.provider_asn = 0, 'Невідомий ASN', concat('AS', toString(q.provider_asn))) AS provider_name, coalesce(nullIf(m.target_name, ''), concat('RIPE ', toString(q.measurement_id))) AS target_name FROM (SELECT toDateTime(h.day, 'Europe/Kyiv') AS period_start, h.msm_id AS measurement_id, concat('IPv', toString(h.af)) AS ip_version, h.asn AS provider_asn, h.probe_id AS probe_id, sum(h.samples) AS measurement_count, uniqExactIf(h.probe_id, h.samples > 0) AS probes_observed, sum(h.sent) AS packets_sent, sum(h.received) AS packets_received, packets_sent - packets_received AS packets_lost, (100. * packets_lost) / nullIf(packets_sent, 0) AS packet_loss_pct, sum(h.rtt_sum) / nullIf(sum(h.rtt_count), 0) AS avg_rtt_ms, min(h.rtt_min) AS min_rtt_ms, max(h.rtt_max) AS max_rtt_ms, (100. * (measurement_count - sum(h.full_loss_samples))) / nullIf(measurement_count, 0) AS successful_measurements_pct, sum(h.loss_samples) AS high_loss_measurements, sum(h.full_loss_samples) AS no_reply_measurements FROM monitoring.daily_metrics AS h FINAL WHERE (h.af IN (4, 6)) AND (h.msm_id > 0) AND (h.samples > 0) AND 1 GROUP BY period_start, h.msm_id, h.af, h.asn, h.probe_id) AS q LEFT JOIN analytics.measurement_directory AS m ON m.measurement_id = q.measurement_id"
+      },
+      {
+        "database": "analytics",
+        "name": "probes_daily_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.probes_daily_kpi (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `target_name` String, `ip_version` String, `provider_asn` UInt32, `provider_name` String, `probe_id` UInt32, `kpi_code` String, `kpi_name` String, `unit` String, `value` Nullable(Float64)) AS SELECT q.period_start, q.measurement_id, q.target_name, q.ip_version, q.provider_asn, q.provider_name, q.probe_id, metric.1 AS kpi_code, metric.2 AS kpi_name, metric.3 AS unit, metric.4 AS value FROM analytics.probes_daily AS q ARRAY JOIN [('measurement_count', 'Кількість вимірювань', 'шт.', toNullable(toFloat64(q.measurement_count))), ('packets_sent', 'Надіслано пакетів', 'пакетів', toNullable(toFloat64(q.packets_sent))), ('packets_received', 'Отримано пакетів', 'пакетів', toNullable(toFloat64(q.packets_received))), ('packets_lost', 'Втрачено пакетів', 'пакетів', toNullable(toFloat64(q.packets_lost))), ('packet_loss_pct', 'Втрата пакетів', '%', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', 'Середня затримка', 'мс', toNullable(toFloat64(q.avg_rtt_ms))), ('min_rtt_ms', 'Мінімальна затримка', 'мс', toNullable(toFloat64(q.min_rtt_ms))), ('max_rtt_ms', 'Максимальна затримка', 'мс', toNullable(toFloat64(q.max_rtt_ms))), ('successful_measurements_pct', 'Вимірювання з відповіддю', '%', toNullable(toFloat64(q.successful_measurements_pct))), ('high_loss_measurements', 'Вимірювання із втратою понад 50%', 'шт.', toNullable(toFloat64(q.high_loss_measurements))), ('no_reply_measurements', 'Вимірювання без відповіді', 'шт.', toNullable(toFloat64(q.no_reply_measurements)))] AS metric"
+      },
+      {
+        "database": "analytics",
+        "name": "probes_hourly",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.probes_hourly (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `ip_version` String, `provider_asn` UInt32, `probe_id` UInt32, `measurement_count` UInt64, `probes_observed` UInt64, `packets_sent` UInt64, `packets_received` UInt64, `packets_lost` Int64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float64), `max_rtt_ms` Nullable(Float64), `successful_measurements_pct` Nullable(Float64), `high_loss_measurements` UInt64, `no_reply_measurements` UInt64, `provider_name` String, `target_name` String) AS SELECT q.*, if(q.provider_asn = 0, 'Невідомий ASN', concat('AS', toString(q.provider_asn))) AS provider_name, coalesce(nullIf(m.target_name, ''), concat('RIPE ', toString(q.measurement_id))) AS target_name FROM (SELECT toTimeZone(h.hour_start, 'Europe/Kyiv') AS period_start, h.msm_id AS measurement_id, concat('IPv', toString(h.af)) AS ip_version, h.asn AS provider_asn, h.probe_id AS probe_id, sum(h.samples) AS measurement_count, uniqExactIf(h.probe_id, h.samples > 0) AS probes_observed, sum(h.sent) AS packets_sent, sum(h.received) AS packets_received, packets_sent - packets_received AS packets_lost, (100. * packets_lost) / nullIf(packets_sent, 0) AS packet_loss_pct, sum(h.rtt_sum) / nullIf(sum(h.rtt_count), 0) AS avg_rtt_ms, min(h.rtt_min) AS min_rtt_ms, max(h.rtt_max) AS max_rtt_ms, (100. * (measurement_count - sum(h.full_loss_samples))) / nullIf(measurement_count, 0) AS successful_measurements_pct, sum(h.loss_samples) AS high_loss_measurements, sum(h.full_loss_samples) AS no_reply_measurements FROM monitoring.hourly_metrics AS h FINAL WHERE (h.af IN (4, 6)) AND (h.msm_id > 0) AND (h.samples > 0) AND (h.hour_start >= (now() - toIntervalHour(48))) AND (h.hour_start < toStartOfHour(now())) GROUP BY period_start, h.msm_id, h.af, h.asn, h.probe_id) AS q LEFT JOIN analytics.measurement_directory AS m ON m.measurement_id = q.measurement_id"
+      },
+      {
+        "database": "analytics",
+        "name": "probes_hourly_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.probes_hourly_kpi (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `target_name` String, `ip_version` String, `provider_asn` UInt32, `provider_name` String, `probe_id` UInt32, `kpi_code` String, `kpi_name` String, `unit` String, `value` Nullable(Float64)) AS SELECT q.period_start, q.measurement_id, q.target_name, q.ip_version, q.provider_asn, q.provider_name, q.probe_id, metric.1 AS kpi_code, metric.2 AS kpi_name, metric.3 AS unit, metric.4 AS value FROM analytics.probes_hourly AS q ARRAY JOIN [('measurement_count', 'Кількість вимірювань', 'шт.', toNullable(toFloat64(q.measurement_count))), ('packets_sent', 'Надіслано пакетів', 'пакетів', toNullable(toFloat64(q.packets_sent))), ('packets_received', 'Отримано пакетів', 'пакетів', toNullable(toFloat64(q.packets_received))), ('packets_lost', 'Втрачено пакетів', 'пакетів', toNullable(toFloat64(q.packets_lost))), ('packet_loss_pct', 'Втрата пакетів', '%', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', 'Середня затримка', 'мс', toNullable(toFloat64(q.avg_rtt_ms))), ('min_rtt_ms', 'Мінімальна затримка', 'мс', toNullable(toFloat64(q.min_rtt_ms))), ('max_rtt_ms', 'Максимальна затримка', 'мс', toNullable(toFloat64(q.max_rtt_ms))), ('successful_measurements_pct', 'Вимірювання з відповіддю', '%', toNullable(toFloat64(q.successful_measurements_pct))), ('high_loss_measurements', 'Вимірювання із втратою понад 50%', 'шт.', toNullable(toFloat64(q.high_loss_measurements))), ('no_reply_measurements', 'Вимірювання без відповіді', 'шт.', toNullable(toFloat64(q.no_reply_measurements)))] AS metric"
+      },
+      {
+        "database": "analytics",
+        "name": "providers_5minutes",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.providers_5minutes (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `target_name` String, `ip_version` String, `provider_asn` UInt32, `provider_name` String, `measurement_count` UInt64, `probes_observed` UInt64, `packets_sent` UInt64, `packets_received` UInt64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float32), `max_rtt_ms` Nullable(Float32), `successful_measurements_pct` Float64, `no_reply_measurements` UInt64) AS SELECT toStartOfFiveMinutes(measured_at) AS period_start, measurement_id, target_name, ip_version, provider_asn, provider_name, count() AS measurement_count, uniqExact(probe_id) AS probes_observed, sum(q.packets_sent) AS packets_sent, sum(q.packets_received) AS packets_received, (100. * (packets_sent - packets_received)) / nullIf(packets_sent, 0) AS packet_loss_pct, avg(q.avg_rtt_ms) AS avg_rtt_ms, min(q.min_rtt_ms) AS min_rtt_ms, max(q.max_rtt_ms) AS max_rtt_ms, (100. * countIf(q.packets_received > 0)) / count() AS successful_measurements_pct, countIf(q.packets_received = 0) AS no_reply_measurements FROM analytics.measurements_live AS q GROUP BY period_start, measurement_id, target_name, ip_version, provider_asn, provider_name"
+      },
+      {
+        "database": "analytics",
+        "name": "providers_daily",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.providers_daily (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `ip_version` String, `provider_asn` UInt32, `measurement_count` UInt64, `probes_observed` UInt64, `packets_sent` UInt64, `packets_received` UInt64, `packets_lost` Int64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float64), `max_rtt_ms` Nullable(Float64), `successful_measurements_pct` Nullable(Float64), `high_loss_measurements` UInt64, `no_reply_measurements` UInt64, `provider_name` String, `target_name` String) AS SELECT q.*, if(q.provider_asn = 0, 'Невідомий ASN', concat('AS', toString(q.provider_asn))) AS provider_name, coalesce(nullIf(m.target_name, ''), concat('RIPE ', toString(q.measurement_id))) AS target_name FROM (SELECT toDateTime(h.day, 'Europe/Kyiv') AS period_start, h.msm_id AS measurement_id, concat('IPv', toString(h.af)) AS ip_version, h.asn AS provider_asn, sum(h.samples) AS measurement_count, uniqExactIf(h.probe_id, h.samples > 0) AS probes_observed, sum(h.sent) AS packets_sent, sum(h.received) AS packets_received, packets_sent - packets_received AS packets_lost, (100. * packets_lost) / nullIf(packets_sent, 0) AS packet_loss_pct, sum(h.rtt_sum) / nullIf(sum(h.rtt_count), 0) AS avg_rtt_ms, min(h.rtt_min) AS min_rtt_ms, max(h.rtt_max) AS max_rtt_ms, (100. * (measurement_count - sum(h.full_loss_samples))) / nullIf(measurement_count, 0) AS successful_measurements_pct, sum(h.loss_samples) AS high_loss_measurements, sum(h.full_loss_samples) AS no_reply_measurements FROM monitoring.daily_metrics AS h FINAL WHERE (h.af IN (4, 6)) AND (h.msm_id > 0) AND (h.samples > 0) AND 1 GROUP BY period_start, h.msm_id, h.af, h.asn) AS q LEFT JOIN analytics.measurement_directory AS m ON m.measurement_id = q.measurement_id"
+      },
+      {
+        "database": "analytics",
+        "name": "providers_daily_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.providers_daily_kpi (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `target_name` String, `ip_version` String, `provider_asn` UInt32, `provider_name` String, `kpi_code` String, `kpi_name` String, `unit` String, `value` Nullable(Float64)) AS SELECT q.period_start, q.measurement_id, q.target_name, q.ip_version, q.provider_asn, q.provider_name, metric.1 AS kpi_code, metric.2 AS kpi_name, metric.3 AS unit, metric.4 AS value FROM analytics.providers_daily AS q ARRAY JOIN [('measurement_count', 'Кількість вимірювань', 'шт.', toNullable(toFloat64(q.measurement_count))), ('probes_observed', 'Спостережувані зонди', 'зондів', toNullable(toFloat64(q.probes_observed))), ('packets_sent', 'Надіслано пакетів', 'пакетів', toNullable(toFloat64(q.packets_sent))), ('packets_received', 'Отримано пакетів', 'пакетів', toNullable(toFloat64(q.packets_received))), ('packets_lost', 'Втрачено пакетів', 'пакетів', toNullable(toFloat64(q.packets_lost))), ('packet_loss_pct', 'Втрата пакетів', '%', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', 'Середня затримка', 'мс', toNullable(toFloat64(q.avg_rtt_ms))), ('min_rtt_ms', 'Мінімальна затримка', 'мс', toNullable(toFloat64(q.min_rtt_ms))), ('max_rtt_ms', 'Максимальна затримка', 'мс', toNullable(toFloat64(q.max_rtt_ms))), ('successful_measurements_pct', 'Вимірювання з відповіддю', '%', toNullable(toFloat64(q.successful_measurements_pct))), ('high_loss_measurements', 'Вимірювання із втратою понад 50%', 'шт.', toNullable(toFloat64(q.high_loss_measurements))), ('no_reply_measurements', 'Вимірювання без відповіді', 'шт.', toNullable(toFloat64(q.no_reply_measurements)))] AS metric"
+      },
+      {
+        "database": "analytics",
+        "name": "providers_hourly",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.providers_hourly (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `ip_version` String, `provider_asn` UInt32, `measurement_count` UInt64, `probes_observed` UInt64, `packets_sent` UInt64, `packets_received` UInt64, `packets_lost` Int64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float64), `max_rtt_ms` Nullable(Float64), `successful_measurements_pct` Nullable(Float64), `high_loss_measurements` UInt64, `no_reply_measurements` UInt64, `provider_name` String, `target_name` String) AS SELECT q.*, if(q.provider_asn = 0, 'Невідомий ASN', concat('AS', toString(q.provider_asn))) AS provider_name, coalesce(nullIf(m.target_name, ''), concat('RIPE ', toString(q.measurement_id))) AS target_name FROM (SELECT toTimeZone(h.hour_start, 'Europe/Kyiv') AS period_start, h.msm_id AS measurement_id, concat('IPv', toString(h.af)) AS ip_version, h.asn AS provider_asn, sum(h.samples) AS measurement_count, uniqExactIf(h.probe_id, h.samples > 0) AS probes_observed, sum(h.sent) AS packets_sent, sum(h.received) AS packets_received, packets_sent - packets_received AS packets_lost, (100. * packets_lost) / nullIf(packets_sent, 0) AS packet_loss_pct, sum(h.rtt_sum) / nullIf(sum(h.rtt_count), 0) AS avg_rtt_ms, min(h.rtt_min) AS min_rtt_ms, max(h.rtt_max) AS max_rtt_ms, (100. * (measurement_count - sum(h.full_loss_samples))) / nullIf(measurement_count, 0) AS successful_measurements_pct, sum(h.loss_samples) AS high_loss_measurements, sum(h.full_loss_samples) AS no_reply_measurements FROM monitoring.hourly_metrics AS h FINAL WHERE (h.af IN (4, 6)) AND (h.msm_id > 0) AND (h.samples > 0) AND (h.hour_start >= (now() - toIntervalHour(48))) AND (h.hour_start < toStartOfHour(now())) GROUP BY period_start, h.msm_id, h.af, h.asn) AS q LEFT JOIN analytics.measurement_directory AS m ON m.measurement_id = q.measurement_id"
+      },
+      {
+        "database": "analytics",
+        "name": "providers_hourly_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW analytics.providers_hourly_kpi (`period_start` DateTime('Europe/Kyiv'), `measurement_id` UInt32, `target_name` String, `ip_version` String, `provider_asn` UInt32, `provider_name` String, `kpi_code` String, `kpi_name` String, `unit` String, `value` Nullable(Float64)) AS SELECT q.period_start, q.measurement_id, q.target_name, q.ip_version, q.provider_asn, q.provider_name, metric.1 AS kpi_code, metric.2 AS kpi_name, metric.3 AS unit, metric.4 AS value FROM analytics.providers_hourly AS q ARRAY JOIN [('measurement_count', 'Кількість вимірювань', 'шт.', toNullable(toFloat64(q.measurement_count))), ('probes_observed', 'Спостережувані зонди', 'зондів', toNullable(toFloat64(q.probes_observed))), ('packets_sent', 'Надіслано пакетів', 'пакетів', toNullable(toFloat64(q.packets_sent))), ('packets_received', 'Отримано пакетів', 'пакетів', toNullable(toFloat64(q.packets_received))), ('packets_lost', 'Втрачено пакетів', 'пакетів', toNullable(toFloat64(q.packets_lost))), ('packet_loss_pct', 'Втрата пакетів', '%', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', 'Середня затримка', 'мс', toNullable(toFloat64(q.avg_rtt_ms))), ('min_rtt_ms', 'Мінімальна затримка', 'мс', toNullable(toFloat64(q.min_rtt_ms))), ('max_rtt_ms', 'Максимальна затримка', 'мс', toNullable(toFloat64(q.max_rtt_ms))), ('successful_measurements_pct', 'Вимірювання з відповіддю', '%', toNullable(toFloat64(q.successful_measurements_pct))), ('high_loss_measurements', 'Вимірювання із втратою понад 50%', 'шт.', toNullable(toFloat64(q.high_loss_measurements))), ('no_reply_measurements', 'Вимірювання без відповіді', 'шт.', toNullable(toFloat64(q.no_reply_measurements)))] AS metric"
+      },
+      {
+        "database": "monitoring",
+        "name": "daily_country_metrics",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.daily_country_metrics (`day` Date, `af` UInt8, `msm_id` UInt32, `observed_probes` UInt64, `samples` UInt64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64)) AS SELECT day, af, msm_id, uniqExact(probe_id) AS observed_probes, sum(samples) AS samples, (100. * (sum(sent) - sum(received))) / nullIf(sum(sent), 0) AS packet_loss_pct, sum(rtt_sum) / nullIf(sum(rtt_count), 0) AS avg_rtt_ms FROM monitoring.daily_metrics FINAL WHERE af > 0 GROUP BY day, af, msm_id"
+      },
+      {
+        "database": "monitoring",
+        "name": "daily_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.daily_kpi (`period_start` DateTime('Europe/Kyiv'), `period_end` DateTime('Europe/Kyiv'), `period_name_uk` String, `period_label` String, `probe_id` UInt32, `msm_id` UInt32, `af` UInt8, `asn` UInt32, `kpi_code` String, `kpi_name_uk` String, `kpi_value` Nullable(Float64), `unit_uk` String) AS SELECT toDateTime(q.day, 'Europe/Kyiv') AS period_start, toDateTime(addDays(q.day, 1), 'Europe/Kyiv') AS period_end, q.period_name_uk, q.period_label, q.probe_id, q.msm_id, q.af, q.asn, d.kpi_code, d.kpi_name_uk, metric.2 AS kpi_value, d.unit_uk FROM (SELECT v.*, h.loss_samples, h.full_loss_samples FROM monitoring.daily_network_metrics AS v INNER JOIN (SELECT * FROM monitoring.daily_metrics FINAL) AS h USING (day, probe_id, msm_id, af, asn)) AS q ARRAY JOIN [('samples', toNullable(toFloat64(q.samples))), ('sent', toNullable(toFloat64(q.sent))), ('received', toNullable(toFloat64(q.received))), ('packets_lost', toNullable(toFloat64(q.sent - q.received))), ('packet_loss_pct', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', toNullable(toFloat64(q.avg_rtt_ms))), ('min_rtt_ms', toNullable(toFloat64(q.min_rtt_ms))), ('max_rtt_ms', toNullable(toFloat64(q.max_rtt_ms))), ('measurement_success_pct', toNullable(toFloat64(q.measurement_success_pct))), ('loss_samples', toNullable(toFloat64(q.loss_samples))), ('full_loss_samples', toNullable(toFloat64(q.full_loss_samples)))] AS metric INNER JOIN (SELECT * FROM monitoring.kpi_dictionary FINAL) AS d ON d.kpi_code = (metric.1)"
+      },
+      {
+        "database": "monitoring",
+        "name": "daily_metrics",
+        "engine": "ReplacingMergeTree",
+        "sorting_key": "day, probe_id, msm_id, af, asn",
+        "partition_key": "toYYYYMM(day)",
+        "create_table_query": "CREATE TABLE monitoring.daily_metrics (`day` Date, `probe_id` UInt32, `msm_id` UInt32, `af` UInt8, `asn` UInt32, `samples` UInt64, `sent` UInt64, `received` UInt64, `rtt_sum` Float64, `rtt_count` UInt64, `rtt_min` Nullable(Float64), `rtt_max` Nullable(Float64), `normal_rtt_sum` Float64, `normal_rtt_count` UInt64, `loss_samples` UInt64, `full_loss_samples` UInt64, `connects` UInt64, `disconnects` UInt64, `version` UInt64) ENGINE = ReplacingMergeTree(version) PARTITION BY toYYYYMM(day) ORDER BY (day, probe_id, msm_id, af, asn) SETTINGS index_granularity = 8192"
+      },
+      {
+        "database": "monitoring",
+        "name": "daily_network_metrics",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.daily_network_metrics (`day` Date, `probe_id` UInt32, `msm_id` UInt32, `af` UInt8, `asn` UInt32, `samples` UInt64, `sent` UInt64, `received` UInt64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float64), `max_rtt_ms` Nullable(Float64), `measurement_success_pct` Nullable(Float64), `connects` UInt64, `disconnects` UInt64, `period_name_uk` String, `period_label` String) AS SELECT q.*, 'Поденні дані' AS period_name_uk, formatDateTime(toDateTime(q.day), '%d.%m.%Y') AS period_label FROM (SELECT day, probe_id, msm_id, af, asn, samples, sent, received, (100. * (sent - received)) / nullIf(sent, 0) AS packet_loss_pct, rtt_sum / nullIf(rtt_count, 0) AS avg_rtt_ms, rtt_min AS min_rtt_ms, rtt_max AS max_rtt_ms, (100. * (samples - full_loss_samples)) / nullIf(samples, 0) AS measurement_success_pct, connects, disconnects FROM monitoring.daily_metrics FINAL WHERE af > 0) AS q"
+      },
+      {
+        "database": "monitoring",
+        "name": "daily_probe_activity",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.daily_probe_activity (`day` Date, `probe_id` UInt32, `asn` UInt32, `connects` UInt64, `disconnects` UInt64) AS SELECT day, probe_id, asn, connects, disconnects FROM monitoring.daily_metrics FINAL WHERE af = 0"
+      },
+      {
+        "database": "monitoring",
+        "name": "daily_provider_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.daily_provider_kpi (`period_start` DateTime('Europe/Kyiv'), `period_end` DateTime('Europe/Kyiv'), `period_name_uk` String, `period_label` String, `msm_id` UInt32, `af` UInt8, `asn` UInt32, `kpi_code` String, `kpi_name_uk` String, `kpi_value` Nullable(Float64), `unit_uk` String) AS SELECT toDateTime(q.day, 'Europe/Kyiv') AS period_start, toDateTime(addDays(q.day, 1), 'Europe/Kyiv') AS period_end, q.period_name_uk, q.period_label, q.msm_id, q.af, q.asn, d.kpi_code, d.kpi_name_uk, metric.2 AS kpi_value, d.unit_uk FROM (SELECT * FROM monitoring.daily_provider_metrics) AS q ARRAY JOIN [('observed_probes', toNullable(toFloat64(q.observed_probes))), ('samples', toNullable(toFloat64(q.samples))), ('packet_loss_pct', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', toNullable(toFloat64(q.avg_rtt_ms)))] AS metric INNER JOIN (SELECT * FROM monitoring.kpi_dictionary FINAL) AS d ON d.kpi_code = (metric.1)"
+      },
+      {
+        "database": "monitoring",
+        "name": "daily_provider_metrics",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.daily_provider_metrics (`day` Date, `asn` UInt32, `af` UInt8, `msm_id` UInt32, `observed_probes` UInt64, `samples` UInt64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `disconnects` UInt64, `period_name_uk` String, `period_label` String) AS SELECT q.*, 'Поденні дані' AS period_name_uk, formatDateTime(toDateTime(q.day), '%d.%m.%Y') AS period_label FROM (SELECT day, asn, af, msm_id, uniqExact(probe_id) AS observed_probes, sum(samples) AS samples, (100. * (sum(sent) - sum(received))) / nullIf(sum(sent), 0) AS packet_loss_pct, sum(rtt_sum) / nullIf(sum(rtt_count), 0) AS avg_rtt_ms, sum(disconnects) AS disconnects FROM monitoring.daily_metrics FINAL WHERE af > 0 GROUP BY day, asn, af, msm_id) AS q"
+      },
+      {
+        "database": "monitoring",
+        "name": "field_dictionary",
+        "engine": "ReplacingMergeTree",
+        "sorting_key": "field_code",
+        "partition_key": "",
+        "create_table_query": "CREATE TABLE monitoring.field_dictionary (`field_code` String, `field_name_uk` String) ENGINE = ReplacingMergeTree ORDER BY field_code SETTINGS index_granularity = 8192"
+      },
+      {
+        "database": "monitoring",
+        "name": "hourly_country_metrics",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.hourly_country_metrics (`hour_start` DateTime('UTC'), `local_hour` DateTime('Europe/Kyiv'), `af` UInt8, `msm_id` UInt32, `observed_probes` UInt64, `samples` UInt64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64)) AS SELECT hour_start, toTimeZone(hour_start, 'Europe/Kyiv') AS local_hour, af, msm_id, uniqExact(probe_id) AS observed_probes, sum(samples) AS samples, (100. * (sum(sent) - sum(received))) / nullIf(sum(sent), 0) AS packet_loss_pct, sum(rtt_sum) / nullIf(sum(rtt_count), 0) AS avg_rtt_ms FROM monitoring.hourly_metrics FINAL WHERE (af > 0) AND (hour_start >= (now() - toIntervalDay(2))) AND (hour_start < toStartOfHour(now())) GROUP BY hour_start, af, msm_id"
+      },
+      {
+        "database": "monitoring",
+        "name": "hourly_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.hourly_kpi (`period_start` DateTime('UTC'), `period_end` DateTime('UTC'), `period_name_uk` String, `period_label` String, `probe_id` UInt32, `msm_id` UInt32, `af` UInt8, `asn` UInt32, `kpi_code` String, `kpi_name_uk` String, `kpi_value` Nullable(Float64), `unit_uk` String) AS SELECT q.hour_start AS period_start, q.hour_start + toIntervalHour(1) AS period_end, q.period_name_uk, q.period_label, q.probe_id, q.msm_id, q.af, q.asn, d.kpi_code, d.kpi_name_uk, metric.2 AS kpi_value, d.unit_uk FROM (SELECT v.*, h.loss_samples, h.full_loss_samples FROM monitoring.hourly_network_metrics AS v INNER JOIN (SELECT * FROM monitoring.hourly_metrics FINAL) AS h USING (hour_start, probe_id, msm_id, af, asn)) AS q ARRAY JOIN [('samples', toNullable(toFloat64(q.samples))), ('sent', toNullable(toFloat64(q.sent))), ('received', toNullable(toFloat64(q.received))), ('packets_lost', toNullable(toFloat64(q.sent - q.received))), ('packet_loss_pct', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', toNullable(toFloat64(q.avg_rtt_ms))), ('min_rtt_ms', toNullable(toFloat64(q.min_rtt_ms))), ('max_rtt_ms', toNullable(toFloat64(q.max_rtt_ms))), ('measurement_success_pct', toNullable(toFloat64(q.measurement_success_pct))), ('loss_samples', toNullable(toFloat64(q.loss_samples))), ('full_loss_samples', toNullable(toFloat64(q.full_loss_samples)))] AS metric INNER JOIN (SELECT * FROM monitoring.kpi_dictionary FINAL) AS d ON d.kpi_code = (metric.1)"
+      },
+      {
+        "database": "monitoring",
+        "name": "hourly_metrics",
+        "engine": "ReplacingMergeTree",
+        "sorting_key": "hour_start, probe_id, msm_id, af, asn",
+        "partition_key": "toDate(hour_start)",
+        "create_table_query": "CREATE TABLE monitoring.hourly_metrics (`hour_start` DateTime('UTC'), `probe_id` UInt32, `msm_id` UInt32, `af` UInt8, `asn` UInt32, `samples` UInt64, `sent` UInt64, `received` UInt64, `rtt_sum` Float64, `rtt_count` UInt64, `rtt_min` Nullable(Float64), `rtt_max` Nullable(Float64), `normal_rtt_sum` Float64, `normal_rtt_count` UInt64, `loss_samples` UInt64, `full_loss_samples` UInt64, `connects` UInt64, `disconnects` UInt64, `version` UInt64) ENGINE = ReplacingMergeTree(version) PARTITION BY toDate(hour_start) ORDER BY (hour_start, probe_id, msm_id, af, asn) SETTINGS index_granularity = 8192"
+      },
+      {
+        "database": "monitoring",
+        "name": "hourly_network_metrics",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.hourly_network_metrics (`hour_start` DateTime('UTC'), `local_hour` DateTime('Europe/Kyiv'), `probe_id` UInt32, `msm_id` UInt32, `af` UInt8, `asn` UInt32, `samples` UInt64, `sent` UInt64, `received` UInt64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `min_rtt_ms` Nullable(Float64), `max_rtt_ms` Nullable(Float64), `measurement_success_pct` Nullable(Float64), `connects` UInt64, `disconnects` UInt64, `period_name_uk` String, `period_label` String) AS SELECT q.*, 'Погодинні дані' AS period_name_uk, formatDateTime(toTimeZone(q.hour_start, 'Europe/Kyiv'), '%d.%m.%Y %H:%i %z') AS period_label FROM (SELECT hour_start, toTimeZone(hour_start, 'Europe/Kyiv') AS local_hour, probe_id, msm_id, af, asn, samples, sent, received, (100. * (sent - received)) / nullIf(sent, 0) AS packet_loss_pct, rtt_sum / nullIf(rtt_count, 0) AS avg_rtt_ms, rtt_min AS min_rtt_ms, rtt_max AS max_rtt_ms, (100. * (samples - full_loss_samples)) / nullIf(samples, 0) AS measurement_success_pct, connects, disconnects FROM monitoring.hourly_metrics FINAL WHERE (af > 0) AND (hour_start >= (now() - toIntervalDay(2))) AND (hour_start < toStartOfHour(now()))) AS q"
+      },
+      {
+        "database": "monitoring",
+        "name": "hourly_provider_kpi",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.hourly_provider_kpi (`period_start` DateTime('UTC'), `period_end` DateTime('UTC'), `period_name_uk` String, `period_label` String, `msm_id` UInt32, `af` UInt8, `asn` UInt32, `kpi_code` String, `kpi_name_uk` String, `kpi_value` Nullable(Float64), `unit_uk` String) AS SELECT q.hour_start AS period_start, q.hour_start + toIntervalHour(1) AS period_end, q.period_name_uk, q.period_label, q.msm_id, q.af, q.asn, d.kpi_code, d.kpi_name_uk, metric.2 AS kpi_value, d.unit_uk FROM (SELECT * FROM monitoring.hourly_provider_metrics) AS q ARRAY JOIN [('observed_probes', toNullable(toFloat64(q.observed_probes))), ('samples', toNullable(toFloat64(q.samples))), ('packet_loss_pct', toNullable(toFloat64(q.packet_loss_pct))), ('avg_rtt_ms', toNullable(toFloat64(q.avg_rtt_ms)))] AS metric INNER JOIN (SELECT * FROM monitoring.kpi_dictionary FINAL) AS d ON d.kpi_code = (metric.1)"
+      },
+      {
+        "database": "monitoring",
+        "name": "hourly_provider_metrics",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.hourly_provider_metrics (`hour_start` DateTime('UTC'), `asn` UInt32, `af` UInt8, `msm_id` UInt32, `observed_probes` UInt64, `samples` UInt64, `packet_loss_pct` Nullable(Float64), `avg_rtt_ms` Nullable(Float64), `disconnects` UInt64, `period_name_uk` String, `period_label` String) AS SELECT q.*, 'Погодинні дані' AS period_name_uk, formatDateTime(toTimeZone(q.hour_start, 'Europe/Kyiv'), '%d.%m.%Y %H:%i %z') AS period_label FROM (SELECT hour_start, asn, af, msm_id, uniqExact(probe_id) AS observed_probes, sum(samples) AS samples, (100. * (sum(sent) - sum(received))) / nullIf(sum(sent), 0) AS packet_loss_pct, sum(rtt_sum) / nullIf(sum(rtt_count), 0) AS avg_rtt_ms, sum(disconnects) AS disconnects FROM monitoring.hourly_metrics FINAL WHERE (af > 0) AND (hour_start >= (now() - toIntervalDay(2))) AND (hour_start < toStartOfHour(now())) GROUP BY hour_start, asn, af, msm_id) AS q"
+      },
+      {
+        "database": "monitoring",
+        "name": "kpi_dictionary",
+        "engine": "ReplacingMergeTree",
+        "sorting_key": "kpi_code",
+        "partition_key": "",
+        "create_table_query": "CREATE TABLE monitoring.kpi_dictionary (`kpi_code` String, `kpi_name_uk` String, `unit_uk` String, `description_uk` String) ENGINE = ReplacingMergeTree ORDER BY kpi_code SETTINGS index_granularity = 8192"
+      },
+      {
+        "database": "monitoring",
+        "name": "live_network_measurements",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.live_network_measurements (`event_id` String, `event_time` DateTime64(3, 'UTC'), `local_time` DateTime64(3, 'Europe/Kyiv'), `probe_id` UInt32, `msm_id` UInt32, `af` UInt8, `asn` UInt32, `country` LowCardinality(String), `latitude` Nullable(Float64), `longitude` Nullable(Float64), `rtt_ms` Nullable(Float32), `packet_loss_pct` Float32, `sent` UInt16, `received` UInt16, `target` Nullable(String), `source_mode` LowCardinality(String)) AS SELECT r.event_id, r.event_time, toTimeZone(r.event_time, 'Europe/Kyiv') AS local_time, r.prb_id AS probe_id, r.msm_id, r.af, if(r.af = 6, p.asn_v6, p.asn_v4) AS asn, p.country, p.latitude, p.longitude, r.rtt_avg AS rtt_ms, r.loss_pct AS packet_loss_pct, r.sent, r.rcvd AS received, r.dst_name AS target, r.source_mode FROM (SELECT * FROM monitoring.ping_results FINAL WHERE event_time >= (now() - toIntervalHour(5))) AS r LEFT JOIN (SELECT * FROM monitoring.probe_directory FINAL) AS p ON p.probe_id = r.prb_id"
+      },
+      {
+        "database": "monitoring",
+        "name": "ping_ingest_trigger",
+        "engine": "MaterializedView",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE MATERIALIZED VIEW monitoring.ping_ingest_trigger TO monitoring.retention_runs (`key` String, `value` String, `version` UInt64) AS SELECT 'ingest_request' AS key, toString(max(ingested_at)) AS value, toUInt64(toUnixTimestamp64Nano(now64(9))) AS version FROM monitoring.ping_results"
+      },
+      {
+        "database": "monitoring",
+        "name": "ping_results",
+        "engine": "ReplacingMergeTree",
+        "sorting_key": "msm_id, prb_id, event_time, event_id",
+        "partition_key": "toYYYYMM(event_time)",
+        "create_table_query": "CREATE TABLE monitoring.ping_results (`event_id` String, `msm_id` UInt32, `prb_id` UInt32, `event_time` DateTime64(3, 'UTC'), `af` UInt8, `sent` UInt16, `rcvd` UInt16, `loss_pct` Float32, `rtt_min` Nullable(Float32), `rtt_avg` Nullable(Float32), `rtt_max` Nullable(Float32), `dst_name` Nullable(String), `dst_addr` Nullable(String), `src_addr` Nullable(String), `source_mode` LowCardinality(String), `ingested_at` DateTime64(3, 'UTC') DEFAULT now64(3)) ENGINE = ReplacingMergeTree(ingested_at) PARTITION BY toYYYYMM(event_time) ORDER BY (msm_id, prb_id, event_time, event_id) SETTINGS index_granularity = 8192"
+      },
+      {
+        "database": "monitoring",
+        "name": "probe_directory",
+        "engine": "ReplacingMergeTree",
+        "sorting_key": "probe_id",
+        "partition_key": "",
+        "create_table_query": "CREATE TABLE monitoring.probe_directory (`probe_id` UInt32, `country` LowCardinality(String), `asn_v4` UInt32, `asn_v6` UInt32, `latitude` Nullable(Float64), `longitude` Nullable(Float64), `status` String, `version` UInt64) ENGINE = ReplacingMergeTree(version) ORDER BY probe_id SETTINGS index_granularity = 8192"
+      },
+      {
+        "database": "monitoring",
+        "name": "probe_events",
+        "engine": "ReplacingMergeTree",
+        "sorting_key": "prb_id, event_time, event_id",
+        "partition_key": "toYYYYMM(event_time)",
+        "create_table_query": "CREATE TABLE monitoring.probe_events (`event_id` String, `prb_id` UInt32, `event_time` DateTime64(3, 'UTC'), `event` LowCardinality(String), `ingested_at` DateTime64(3, 'UTC') DEFAULT now64(3)) ENGINE = ReplacingMergeTree(ingested_at) PARTITION BY toYYYYMM(event_time) ORDER BY (prb_id, event_time, event_id) SETTINGS index_granularity = 8192"
+      },
+      {
+        "database": "monitoring",
+        "name": "raw_ping_last_5h",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.raw_ping_last_5h (`event_id` String, `msm_id` UInt32, `prb_id` UInt32, `event_time` DateTime64(3, 'UTC'), `af` UInt8, `sent` UInt16, `rcvd` UInt16, `loss_pct` Float32, `rtt_min` Nullable(Float32), `rtt_avg` Nullable(Float32), `rtt_max` Nullable(Float32), `dst_name` Nullable(String), `dst_addr` Nullable(String), `src_addr` Nullable(String), `source_mode` LowCardinality(String), `ingested_at` DateTime64(3, 'UTC')) AS SELECT * FROM monitoring.ping_results FINAL WHERE event_time >= (now() - toIntervalHour(5))"
+      },
+      {
+        "database": "monitoring",
+        "name": "raw_probe_events_last_5h",
+        "engine": "View",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE VIEW monitoring.raw_probe_events_last_5h (`event_id` String, `prb_id` UInt32, `event_time` DateTime64(3, 'UTC'), `event` LowCardinality(String), `ingested_at` DateTime64(3, 'UTC')) AS SELECT * FROM monitoring.probe_events FINAL WHERE event_time >= (now() - toIntervalHour(5))"
+      },
+      {
+        "database": "monitoring",
+        "name": "retention_runs",
+        "engine": "ReplacingMergeTree",
+        "sorting_key": "key",
+        "partition_key": "",
+        "create_table_query": "CREATE TABLE monitoring.retention_runs (`key` String, `value` String, `version` UInt64) ENGINE = ReplacingMergeTree(version) ORDER BY key SETTINGS index_granularity = 8192"
+      },
+      {
+        "database": "monitoring",
+        "name": "status_ingest_trigger",
+        "engine": "MaterializedView",
+        "sorting_key": "",
+        "partition_key": "",
+        "create_table_query": "CREATE MATERIALIZED VIEW monitoring.status_ingest_trigger TO monitoring.retention_runs (`key` String, `value` String, `version` UInt64) AS SELECT 'status_ingest_request' AS key, toString(max(ingested_at)) AS value, toUInt64(toUnixTimestamp64Nano(now64(9))) AS version FROM monitoring.probe_events"
+      }
+    ],
+    "columns": [
+      {
+        "database": "analytics",
+        "table": "data_freshness",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "data_freshness",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "data_freshness",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "data_freshness",
+        "name": "latest_measurement_at",
+        "type": "Nullable(DateTime64(3, 'Europe/Kyiv'))",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "data_freshness",
+        "name": "data_age_seconds",
+        "type": "Nullable(Int64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "data_freshness",
+        "name": "measurements_last_5h",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "data_freshness",
+        "name": "probes_observed_last_5h",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "data_freshness",
+        "name": "data_status",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "kpi_directory",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "kpi_directory",
+        "name": "kpi_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "kpi_directory",
+        "name": "unit",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurement_directory",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurement_directory",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurement_directory",
+        "name": "target_hostname",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurement_directory",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurement_directory",
+        "name": "address_family",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurement_directory",
+        "name": "interval_seconds",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "measured_at",
+        "type": "DateTime64(3, 'Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "destination_address",
+        "type": "Nullable(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "source_address",
+        "type": "Nullable(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "country_code",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "latitude",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "longitude",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "packets_sent",
+        "type": "UInt16",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "packets_received",
+        "type": "UInt16",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "packets_lost",
+        "type": "Int32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "packet_loss_pct",
+        "type": "Float32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "source_mode",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "measurements_live",
+        "name": "event_id",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "measurement_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "probes_observed",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "packets_sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "packets_received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "successful_measurements_pct",
+        "type": "Float64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_5minutes",
+        "name": "no_reply_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "measurement_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "probes_observed",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "packets_sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "packets_received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "packets_lost",
+        "type": "Int64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "successful_measurements_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "high_loss_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "no_reply_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily_kpi",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily_kpi",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily_kpi",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily_kpi",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily_kpi",
+        "name": "kpi_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily_kpi",
+        "name": "unit",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_daily_kpi",
+        "name": "value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "measurement_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "probes_observed",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "packets_sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "packets_received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "packets_lost",
+        "type": "Int64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "successful_measurements_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "high_loss_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "no_reply_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly_kpi",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly_kpi",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly_kpi",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly_kpi",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly_kpi",
+        "name": "kpi_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly_kpi",
+        "name": "unit",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "network_hourly_kpi",
+        "name": "value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_directory",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_directory",
+        "name": "country_code",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_directory",
+        "name": "ipv4_provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_directory",
+        "name": "ipv6_provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_directory",
+        "name": "latitude",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_directory",
+        "name": "longitude",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_directory",
+        "name": "atlas_status",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_events_live",
+        "name": "event_at",
+        "type": "DateTime64(3, 'Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_events_live",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_events_live",
+        "name": "connection_event",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probe_events_live",
+        "name": "event_id",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "measurement_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "probes_observed",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "packets_sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "packets_received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "packets_lost",
+        "type": "Int64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "successful_measurements_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "high_loss_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "no_reply_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "kpi_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "unit",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_daily_kpi",
+        "name": "value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "measurement_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "probes_observed",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "packets_sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "packets_received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "packets_lost",
+        "type": "Int64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "successful_measurements_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "high_loss_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "no_reply_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "kpi_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "unit",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "probes_hourly_kpi",
+        "name": "value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "measurement_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "probes_observed",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "packets_sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "packets_received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "successful_measurements_pct",
+        "type": "Float64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_5minutes",
+        "name": "no_reply_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "measurement_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "probes_observed",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "packets_sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "packets_received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "packets_lost",
+        "type": "Int64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "successful_measurements_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "high_loss_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "no_reply_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "kpi_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "unit",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_daily_kpi",
+        "name": "value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "measurement_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "probes_observed",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "packets_sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "packets_received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "packets_lost",
+        "type": "Int64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "successful_measurements_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "high_loss_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "no_reply_measurements",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "measurement_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "target_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "ip_version",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "provider_asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "provider_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "kpi_name",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "unit",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "analytics",
+        "table": "providers_hourly_kpi",
+        "name": "value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_country_metrics",
+        "name": "day",
+        "type": "Date",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_country_metrics",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_country_metrics",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_country_metrics",
+        "name": "observed_probes",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_country_metrics",
+        "name": "samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_country_metrics",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_country_metrics",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "period_end",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "period_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "period_label",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "kpi_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "kpi_value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_kpi",
+        "name": "unit_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "day",
+        "type": "Date",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "rtt_sum",
+        "type": "Float64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "rtt_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "rtt_min",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "rtt_max",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "normal_rtt_sum",
+        "type": "Float64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "normal_rtt_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "loss_samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "full_loss_samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "connects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "disconnects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_metrics",
+        "name": "version",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "day",
+        "type": "Date",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "measurement_success_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "connects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "disconnects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "period_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_network_metrics",
+        "name": "period_label",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_probe_activity",
+        "name": "day",
+        "type": "Date",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_probe_activity",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_probe_activity",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_probe_activity",
+        "name": "connects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_probe_activity",
+        "name": "disconnects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "period_start",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "period_end",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "period_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "period_label",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "kpi_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "kpi_value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_kpi",
+        "name": "unit_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "day",
+        "type": "Date",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "observed_probes",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "disconnects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "period_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "daily_provider_metrics",
+        "name": "period_label",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "field_dictionary",
+        "name": "field_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "field_dictionary",
+        "name": "field_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_country_metrics",
+        "name": "hour_start",
+        "type": "DateTime('UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_country_metrics",
+        "name": "local_hour",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_country_metrics",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_country_metrics",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_country_metrics",
+        "name": "observed_probes",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_country_metrics",
+        "name": "samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_country_metrics",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_country_metrics",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "period_start",
+        "type": "DateTime('UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "period_end",
+        "type": "DateTime('UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "period_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "period_label",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "kpi_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "kpi_value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_kpi",
+        "name": "unit_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "hour_start",
+        "type": "DateTime('UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "rtt_sum",
+        "type": "Float64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "rtt_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "rtt_min",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "rtt_max",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "normal_rtt_sum",
+        "type": "Float64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "normal_rtt_count",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "loss_samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "full_loss_samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "connects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "disconnects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_metrics",
+        "name": "version",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "hour_start",
+        "type": "DateTime('UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "local_hour",
+        "type": "DateTime('Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "sent",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "received",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "min_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "max_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "measurement_success_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "connects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "disconnects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "period_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_network_metrics",
+        "name": "period_label",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "period_start",
+        "type": "DateTime('UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "period_end",
+        "type": "DateTime('UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "period_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "period_label",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "kpi_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "kpi_value",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_kpi",
+        "name": "unit_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "hour_start",
+        "type": "DateTime('UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "observed_probes",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "samples",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "packet_loss_pct",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "avg_rtt_ms",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "disconnects",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "period_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "hourly_provider_metrics",
+        "name": "period_label",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "kpi_dictionary",
+        "name": "kpi_code",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "kpi_dictionary",
+        "name": "kpi_name_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "kpi_dictionary",
+        "name": "unit_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "kpi_dictionary",
+        "name": "description_uk",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "event_id",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "event_time",
+        "type": "DateTime64(3, 'UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "local_time",
+        "type": "DateTime64(3, 'Europe/Kyiv')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "asn",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "country",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "latitude",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "longitude",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "rtt_ms",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "packet_loss_pct",
+        "type": "Float32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "sent",
+        "type": "UInt16",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "received",
+        "type": "UInt16",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "target",
+        "type": "Nullable(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "live_network_measurements",
+        "name": "source_mode",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_ingest_trigger",
+        "name": "key",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_ingest_trigger",
+        "name": "value",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_ingest_trigger",
+        "name": "version",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "event_id",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "prb_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "event_time",
+        "type": "DateTime64(3, 'UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "sent",
+        "type": "UInt16",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "rcvd",
+        "type": "UInt16",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "loss_pct",
+        "type": "Float32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "rtt_min",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "rtt_avg",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "rtt_max",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "dst_name",
+        "type": "Nullable(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "dst_addr",
+        "type": "Nullable(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "src_addr",
+        "type": "Nullable(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "source_mode",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "ping_results",
+        "name": "ingested_at",
+        "type": "DateTime64(3, 'UTC')",
+        "default_kind": "DEFAULT",
+        "default_expression": "now64(3)"
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_directory",
+        "name": "probe_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_directory",
+        "name": "country",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_directory",
+        "name": "asn_v4",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_directory",
+        "name": "asn_v6",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_directory",
+        "name": "latitude",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_directory",
+        "name": "longitude",
+        "type": "Nullable(Float64)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_directory",
+        "name": "status",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_directory",
+        "name": "version",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_events",
+        "name": "event_id",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_events",
+        "name": "prb_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_events",
+        "name": "event_time",
+        "type": "DateTime64(3, 'UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_events",
+        "name": "event",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "probe_events",
+        "name": "ingested_at",
+        "type": "DateTime64(3, 'UTC')",
+        "default_kind": "DEFAULT",
+        "default_expression": "now64(3)"
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "event_id",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "msm_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "prb_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "event_time",
+        "type": "DateTime64(3, 'UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "af",
+        "type": "UInt8",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "sent",
+        "type": "UInt16",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "rcvd",
+        "type": "UInt16",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "loss_pct",
+        "type": "Float32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "rtt_min",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "rtt_avg",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "rtt_max",
+        "type": "Nullable(Float32)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "dst_name",
+        "type": "Nullable(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "dst_addr",
+        "type": "Nullable(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "src_addr",
+        "type": "Nullable(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "source_mode",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_ping_last_5h",
+        "name": "ingested_at",
+        "type": "DateTime64(3, 'UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_probe_events_last_5h",
+        "name": "event_id",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_probe_events_last_5h",
+        "name": "prb_id",
+        "type": "UInt32",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_probe_events_last_5h",
+        "name": "event_time",
+        "type": "DateTime64(3, 'UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_probe_events_last_5h",
+        "name": "event",
+        "type": "LowCardinality(String)",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "raw_probe_events_last_5h",
+        "name": "ingested_at",
+        "type": "DateTime64(3, 'UTC')",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "retention_runs",
+        "name": "key",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "retention_runs",
+        "name": "value",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "retention_runs",
+        "name": "version",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "status_ingest_trigger",
+        "name": "key",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "status_ingest_trigger",
+        "name": "value",
+        "type": "String",
+        "default_kind": "",
+        "default_expression": ""
+      },
+      {
+        "database": "monitoring",
+        "table": "status_ingest_trigger",
+        "name": "version",
+        "type": "UInt64",
+        "default_kind": "",
+        "default_expression": ""
+      }
+    ]
+  },
+  "postgresql": {
+    "objects": [
+      {
+        "schema": "public",
+        "name": "incident_episode_metrics",
+        "kind": "VIEW"
+      },
+      {
+        "schema": "public",
+        "name": "incident_episodes",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "public",
+        "name": "incident_history_metrics",
+        "kind": "VIEW"
+      },
+      {
+        "schema": "public",
+        "name": "monitoring_incidents",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "public",
+        "name": "notification_cooldowns",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "public",
+        "name": "probe_connectivity_state",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "public",
+        "name": "processing_error_summary",
+        "kind": "VIEW"
+      },
+      {
+        "schema": "public",
+        "name": "processing_errors",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "public",
+        "name": "telegram_command_replies",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "public",
+        "name": "telegram_deliveries",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "public",
+        "name": "telegram_outbox",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "public",
+        "name": "telegram_poll_state",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "public",
+        "name": "telegram_subscribers",
+        "kind": "BASE TABLE"
+      },
+      {
+        "schema": "reporting",
+        "name": "incidents",
+        "kind": "VIEW"
+      },
+      {
+        "schema": "reporting",
+        "name": "incidents_daily",
+        "kind": "VIEW"
+      },
+      {
+        "schema": "reporting",
+        "name": "incidents_hourly",
+        "kind": "VIEW"
+      },
+      {
+        "schema": "reporting",
+        "name": "processing_errors_hourly",
+        "kind": "VIEW"
+      },
+      {
+        "schema": "reporting",
+        "name": "telegram_deliveries_daily",
+        "kind": "VIEW"
+      }
+    ],
+    "columns": [
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "kind",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "scope",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "opened_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "last_seen_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "resolved_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "status_uk",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "duration_seconds",
+        "type": "numeric",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "severity",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "details",
+        "type": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episode_metrics",
+        "name": "opening_id",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "episode_key",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "kind",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "scope",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "opened_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "last_seen_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "resolved_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "severity",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "details",
+        "type": "jsonb",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "opening_id",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_history_metrics",
+        "name": "episode_id",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_history_metrics",
+        "name": "kind",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_history_metrics",
+        "name": "scope",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_history_metrics",
+        "name": "opened_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_history_metrics",
+        "name": "resolved_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_history_metrics",
+        "name": "status_uk",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "incident_history_metrics",
+        "name": "duration_seconds",
+        "type": "numeric",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "incident_id",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "kind",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "scope",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "event_time",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "severity",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "details",
+        "type": "jsonb",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "notification_status",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "resolved_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "episode_id",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "notification_cooldowns",
+        "name": "scope",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "notification_cooldowns",
+        "name": "last_queued_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "to_timestamp((0)::double precision)"
+      },
+      {
+        "schema": "public",
+        "table": "probe_connectivity_state",
+        "name": "probe_id",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "probe_connectivity_state",
+        "name": "event",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "probe_connectivity_state",
+        "name": "event_timestamp",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_error_summary",
+        "name": "hour_start",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_error_summary",
+        "name": "stage",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_error_summary",
+        "name": "reason",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_error_summary",
+        "name": "rejected_events",
+        "type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_errors",
+        "name": "topic",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_errors",
+        "name": "partition_id",
+        "type": "integer",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_errors",
+        "name": "kafka_offset",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_errors",
+        "name": "stage",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_errors",
+        "name": "reason",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "processing_errors",
+        "name": "received_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_command_replies",
+        "name": "update_id",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_command_replies",
+        "name": "chat_id",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_command_replies",
+        "name": "message",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_command_replies",
+        "name": "status",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": "'pending'::text"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_command_replies",
+        "name": "attempts",
+        "type": "integer",
+        "is_nullable": "NO",
+        "column_default": "0"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_command_replies",
+        "name": "next_attempt_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_command_replies",
+        "name": "last_error",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "outbox_id",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "chat_id",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "status",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": "'pending'::text"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "attempts",
+        "type": "integer",
+        "is_nullable": "NO",
+        "column_default": "0"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "next_attempt_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "sent_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "telegram_message_id",
+        "type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "last_error",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "id",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": "nextval('telegram_outbox_id_seq'::regclass)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "incident_id",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "message",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "status",
+        "type": "text",
+        "is_nullable": "NO",
+        "column_default": "'pending'::text"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "attempts",
+        "type": "integer",
+        "is_nullable": "NO",
+        "column_default": "0"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "next_attempt_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "sent_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "telegram_message_id",
+        "type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "last_error",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_poll_state",
+        "name": "id",
+        "type": "integer",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_poll_state",
+        "name": "next_update_id",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": "0"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_poll_state",
+        "name": "pause_until",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "to_timestamp((0)::double precision)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_subscribers",
+        "name": "chat_id",
+        "type": "bigint",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "schema": "public",
+        "table": "telegram_subscribers",
+        "name": "active",
+        "type": "boolean",
+        "is_nullable": "NO",
+        "column_default": "true"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_subscribers",
+        "name": "subscribed_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_subscribers",
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "incident_id",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "episode_id",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "started_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "resolved_at",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "incident_type",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "scope",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "severity",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "incident_status",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "probe_id",
+        "type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "provider_asn",
+        "type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "measurement_id",
+        "type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "ip_version",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents",
+        "name": "notification_status",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_daily",
+        "name": "day",
+        "type": "date",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_daily",
+        "name": "incident_type",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_daily",
+        "name": "ip_version",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_daily",
+        "name": "measurement_id",
+        "type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_daily",
+        "name": "incident_count",
+        "type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_hourly",
+        "name": "period_start",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_hourly",
+        "name": "incident_type",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_hourly",
+        "name": "severity",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_hourly",
+        "name": "ip_version",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_hourly",
+        "name": "measurement_id",
+        "type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "incidents_hourly",
+        "name": "incident_count",
+        "type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "processing_errors_hourly",
+        "name": "period_start",
+        "type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "processing_errors_hourly",
+        "name": "stage",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "processing_errors_hourly",
+        "name": "reason",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "processing_errors_hourly",
+        "name": "rejected_events",
+        "type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "telegram_deliveries_daily",
+        "name": "day",
+        "type": "date",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "telegram_deliveries_daily",
+        "name": "delivery_status",
+        "type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "schema": "reporting",
+        "table": "telegram_deliveries_daily",
+        "name": "delivery_count",
+        "type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      }
+    ],
+    "constraints": [
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "incident_episodes_opening_id_fkey",
+        "definition": "FOREIGN KEY (opening_id) REFERENCES monitoring_incidents(incident_id)"
+      },
+      {
+        "schema": "public",
+        "table": "incident_episodes",
+        "name": "incident_episodes_pkey",
+        "definition": "PRIMARY KEY (episode_key)"
+      },
+      {
+        "schema": "public",
+        "table": "monitoring_incidents",
+        "name": "monitoring_incidents_pkey",
+        "definition": "PRIMARY KEY (incident_id)"
+      },
+      {
+        "schema": "public",
+        "table": "notification_cooldowns",
+        "name": "notification_cooldowns_pkey",
+        "definition": "PRIMARY KEY (scope)"
+      },
+      {
+        "schema": "public",
+        "table": "probe_connectivity_state",
+        "name": "probe_connectivity_state_pkey",
+        "definition": "PRIMARY KEY (probe_id)"
+      },
+      {
+        "schema": "public",
+        "table": "processing_errors",
+        "name": "processing_errors_pkey",
+        "definition": "PRIMARY KEY (topic, partition_id, kafka_offset)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_command_replies",
+        "name": "telegram_command_replies_pkey",
+        "definition": "PRIMARY KEY (update_id)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "telegram_deliveries_chat_id_fkey",
+        "definition": "FOREIGN KEY (chat_id) REFERENCES telegram_subscribers(chat_id)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "telegram_deliveries_outbox_id_fkey",
+        "definition": "FOREIGN KEY (outbox_id) REFERENCES telegram_outbox(id) ON DELETE CASCADE"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_deliveries",
+        "name": "telegram_deliveries_pkey",
+        "definition": "PRIMARY KEY (outbox_id, chat_id)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "telegram_outbox_incident_id_fkey",
+        "definition": "FOREIGN KEY (incident_id) REFERENCES monitoring_incidents(incident_id)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "telegram_outbox_incident_id_key",
+        "definition": "UNIQUE (incident_id)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_outbox",
+        "name": "telegram_outbox_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_poll_state",
+        "name": "telegram_poll_state_id_check",
+        "definition": "CHECK ((id = 1))"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_poll_state",
+        "name": "telegram_poll_state_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "schema": "public",
+        "table": "telegram_subscribers",
+        "name": "telegram_subscribers_pkey",
+        "definition": "PRIMARY KEY (chat_id)"
+      }
+    ],
+    "views": [
+      {
+        "schema": "public",
+        "name": "incident_episode_metrics",
+        "definition": " SELECT kind,\n    scope,\n    opened_at,\n    last_seen_at,\n    resolved_at,\n        CASE\n            WHEN (resolved_at IS NULL) THEN 'Триває'::text\n            ELSE 'Відновлено'::text\n        END AS status_uk,\n    EXTRACT(epoch FROM (COALESCE(resolved_at, now()) - opened_at)) AS duration_seconds,\n    severity,\n    details,\n    opening_id\n   FROM incident_episodes;"
+      },
+      {
+        "schema": "public",
+        "name": "incident_history_metrics",
+        "definition": " SELECT episode_id,\n    kind,\n    scope,\n    min(event_time) AS opened_at,\n    max(resolved_at) AS resolved_at,\n        CASE\n            WHEN (max(resolved_at) IS NULL) THEN 'Триває'::text\n            ELSE 'Відновлено'::text\n        END AS status_uk,\n    EXTRACT(epoch FROM (COALESCE(max(resolved_at), now()) - min(event_time))) AS duration_seconds\n   FROM monitoring_incidents\n  WHERE ((episode_id IS NOT NULL) AND (kind <> 'RECOVERED'::text))\n  GROUP BY episode_id, kind, scope;"
+      },
+      {
+        "schema": "public",
+        "name": "processing_error_summary",
+        "definition": " SELECT date_trunc('hour'::text, received_at) AS hour_start,\n    stage,\n    reason,\n    count(*) AS rejected_events\n   FROM processing_errors\n  GROUP BY (date_trunc('hour'::text, received_at)), stage, reason;"
+      },
+      {
+        "schema": "reporting",
+        "name": "incidents",
+        "definition": " SELECT incident_id,\n    COALESCE(episode_id, incident_id) AS episode_id,\n    first_event_time AS started_at,\n    resolved_at,\n    kind AS incident_type,\n    scope,\n    severity,\n        CASE\n            WHEN (kind = 'RECOVERED'::text) THEN 'Повідомлення про відновлення'::text\n            WHEN (resolved_at IS NOT NULL) THEN 'Відновлено'::text\n            ELSE 'Триває'::text\n        END AS incident_status,\n    (NULLIF((details ->> 'probe_id'::text), ''::text))::bigint AS probe_id,\n    (NULLIF((details ->> 'asn'::text), ''::text))::bigint AS provider_asn,\n    (NULLIF((details ->> 'msm_id'::text), ''::text))::integer AS measurement_id,\n        CASE (details ->> 'af'::text)\n            WHEN '4'::text THEN 'IPv4'::text\n            WHEN '6'::text THEN 'IPv6'::text\n            ELSE 'Не застосовується'::text\n        END AS ip_version,\n    notification_status\n   FROM ( SELECT DISTINCT ON (COALESCE(monitoring_incidents.episode_id, monitoring_incidents.incident_id)) monitoring_incidents.incident_id,\n            monitoring_incidents.kind,\n            monitoring_incidents.scope,\n            monitoring_incidents.event_time,\n            monitoring_incidents.severity,\n            monitoring_incidents.details,\n            monitoring_incidents.notification_status,\n            monitoring_incidents.created_at,\n            monitoring_incidents.resolved_at,\n            monitoring_incidents.episode_id,\n            min(monitoring_incidents.event_time) OVER (PARTITION BY COALESCE(monitoring_incidents.episode_id, monitoring_incidents.incident_id)) AS first_event_time\n           FROM monitoring_incidents\n          WHERE (monitoring_incidents.kind <> 'RECOVERED'::text)\n          ORDER BY COALESCE(monitoring_incidents.episode_id, monitoring_incidents.incident_id), monitoring_incidents.event_time DESC) episodes;"
+      },
+      {
+        "schema": "reporting",
+        "name": "incidents_daily",
+        "definition": " SELECT ((started_at AT TIME ZONE 'Europe/Kyiv'::text))::date AS day,\n    incident_type,\n    ip_version,\n    measurement_id,\n    count(DISTINCT episode_id) AS incident_count\n   FROM reporting.incidents\n  WHERE (incident_type <> 'RECOVERED'::text)\n  GROUP BY (((started_at AT TIME ZONE 'Europe/Kyiv'::text))::date), incident_type, ip_version, measurement_id;"
+      },
+      {
+        "schema": "reporting",
+        "name": "incidents_hourly",
+        "definition": " SELECT date_trunc('hour'::text, started_at) AS period_start,\n    incident_type,\n    severity,\n    ip_version,\n    measurement_id,\n    count(DISTINCT episode_id) AS incident_count\n   FROM reporting.incidents\n  WHERE (incident_type <> 'RECOVERED'::text)\n  GROUP BY (date_trunc('hour'::text, started_at)), incident_type, severity, ip_version, measurement_id;"
+      },
+      {
+        "schema": "reporting",
+        "name": "processing_errors_hourly",
+        "definition": " SELECT date_trunc('hour'::text, received_at) AS period_start,\n    stage,\n    reason,\n    count(*) AS rejected_events\n   FROM processing_errors\n  GROUP BY (date_trunc('hour'::text, received_at)), stage, reason;"
+      },
+      {
+        "schema": "reporting",
+        "name": "telegram_deliveries_daily",
+        "definition": " SELECT ((o.created_at AT TIME ZONE 'Europe/Kyiv'::text))::date AS day,\n    d.status AS delivery_status,\n    count(*) AS delivery_count\n   FROM (telegram_deliveries d\n     JOIN telegram_outbox o ON ((o.id = d.outbox_id)))\n  GROUP BY (((o.created_at AT TIME ZONE 'Europe/Kyiv'::text))::date), d.status;"
+      }
+    ]
+  }
+}

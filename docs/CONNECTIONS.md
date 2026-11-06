@@ -1,5 +1,36 @@
 # Запуск і підключення
 
+Для послідовного першого встановлення використовуйте [START_HERE.md](START_HERE.md). Нижче — довідник параметрів.
+
+## Усі параметри локального середовища
+
+| Змінна | Типове значення | Призначення |
+|---|---|---|
+| COMPOSE_PROJECT_NAME | ripe-monitoring | Префікс контейнерів, мережі й томів. Змініть для незалежної другої копії. |
+| APP_IMAGE | ripe-monitoring-app:local | Тег спільного образу collector, analytics та alerts. |
+| BIND_ADDRESS | 127.0.0.1 | Інтерфейс хоста для зовнішніх портів. За замовчуванням тільки локальний ПК. |
+| POSTGRES_DB | ripe_monitoring | Назва операційної БД. |
+| POSTGRES_USER | ripe | Початковий користувач PostgreSQL. |
+| POSTGRES_PASSWORD | Генерується bootstrap | Початковий пароль; латинські літери/цифри спрощують URI. |
+| POSTGRES_PORT | 5432 | Опублікований порт PostgreSQL на хості. |
+| CLICKHOUSE_USER | ripe | Початковий користувач ClickHouse. |
+| CLICKHOUSE_PASSWORD | Генерується bootstrap | Початковий пароль ClickHouse. |
+| CLICKHOUSE_HTTP_PORT | 8123 | HTTP/JDBC-порт для DBeaver. |
+| CLICKHOUSE_NATIVE_PORT | 9000 | Native-порт ClickHouse; не потрібний для HTTP/JDBC прикладів. |
+| NIFI_USERNAME | admin | Користувач локального NiFi. |
+| NIFI_PASSWORD | Генерується bootstrap | Пароль NiFi, щонайменше 12 символів. |
+| NIFI_PORT | 8443 | HTTPS-порт NiFi на хості. |
+| NIFI_PROXY_HOST | localhost, якщо не задано | Додаткова дозволена host-назва NiFi; опційно додається до .env для зовнішнього UI. |
+| KAFKA_PORT | 29092 | Зовнішній Kafka listener; усередині Docker використовується kafka:9092. |
+| KAFKA_ADVERTISED_HOST | localhost | Ім’я/IP, яке Kafka повертає зовнішнім клієнтам. |
+| KAFKA_UI_PORT | 8080 | Локальна сторінка Kafka UI. |
+| ADMINER_PORT | 8081 | Локальна сторінка Adminer. |
+| BACKFILL_MINUTES | 60 | Максимальний горизонт REST-дозавантаження, не строк зберігання БД. |
+
+Країна UA і чотири measurement ID явно задані у compose.yaml. Для підтриманого розширення джерел недостатньо змінити лише одну змінну: узгодьте collector, analytics_views.MEASUREMENTS, контроль свіжості та підписи. Настроювання довільних measurement через UI не реалізоване.
+
+Зміна порту в .env не змінює внутрішній порт контейнера. Зміна початкового пароля в .env не мігрує облікові дані вже ініціалізованого тому.
+
 ## Перший запуск
 
 1. Запустіть Docker Desktop у режимі Linux containers.
