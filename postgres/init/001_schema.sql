@@ -1,0 +1,1 @@
+-- PostgreSQL stores incidents, Telegram subscriptions and delivery state. See 002_alerts.sql and 003_telegram_subscriptions.sql.

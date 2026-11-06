@@ -1,0 +1,205 @@
+name: ${COMPOSE_PROJECT_NAME:-ripe-monitoring}
+
+x-app: &app
+  image: ${APP_IMAGE:-ripe-monitoring-app:local}
+  restart: unless-stopped
+
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    hostname: kafka
+    restart: unless-stopped
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${KAFKA_ADVERTISED_HOST:-localhost}:${KAFKA_PORT:-29092}
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_NUM_PARTITIONS: "3"
+      KAFKA_DEFAULT_REPLICATION_FACTOR: "1"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${KAFKA_PORT:-29092}:29092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: [CMD-SHELL, /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  kafka-init:
+    image: apache/kafka:3.9.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-ec"]
+    command:
+      - |
+        for pair in ripe.raw:604800000 ripe.probes:1209600000 ripe.probe_status:1209600000 ripe.dead_letter:2592000000; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic "$${pair%%:*}" --partitions 3 --replication-factor 1 --config retention.ms="$${pair##*:}"
+        done
+    restart: "no"
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ripe_monitoring}
+      POSTGRES_USER: ${POSTGRES_USER:-ripe}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: monitoring
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-ripe}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?Set CLICKHOUSE_PASSWORD in .env}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${BIND_ADDRESS:-127.0.0.1}:${CLICKHOUSE_NATIVE_PORT:-9000}:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, "clickhouse-client --user $${CLICKHOUSE_USER} --password $${CLICKHOUSE_PASSWORD} --query 'SELECT 1' >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  analytics:
+    <<: *app
+    command: [python, -m, app.retention_clickhouse]
+    environment:
+      CLICKHOUSE_URL: http://clickhouse:8123/
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-ripe}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      ANALYTICS_STATE_DIR: /app/state
+    volumes:
+      - analytics_state:/app/state
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8082/health',timeout=5)"]
+      interval: 15s
+      timeout: 8s
+      retries: 20
+
+  nifi:
+    image: apache/nifi:1.28.1
+    restart: unless-stopped
+    environment:
+      SINGLE_USER_CREDENTIALS_USERNAME: ${NIFI_USERNAME:-admin}
+      SINGLE_USER_CREDENTIALS_PASSWORD: ${NIFI_PASSWORD:?Set NIFI_PASSWORD in .env}
+      NIFI_WEB_HTTPS_PORT: "8443"
+      NIFI_WEB_PROXY_HOST: "localhost:${NIFI_PORT:-8443},${NIFI_PROXY_HOST:-localhost}:${NIFI_PORT:-8443}"
+      NIFI_JVM_HEAP_INIT: 512m
+      NIFI_JVM_HEAP_MAX: 1g
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${NIFI_PORT:-8443}:8443"
+    volumes:
+      - nifi_conf:/opt/nifi/nifi-current/conf
+      - nifi_state:/opt/nifi/nifi-current/state
+      - nifi_database:/opt/nifi/nifi-current/database_repository
+      - nifi_flowfiles:/opt/nifi/nifi-current/flowfile_repository
+      - nifi_content:/opt/nifi/nifi-current/content_repository
+      - nifi_provenance:/opt/nifi/nifi-current/provenance_repository
+    depends_on:
+      kafka:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+
+  collector:
+    <<: *app
+    build: ./collector
+    environment:
+      COUNTRY: UA
+      MEASUREMENT_IDS: "1001,2001,1004,2004"
+      BACKFILL_MINUTES: ${BACKFILL_MINUTES:-60}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CHECKPOINT_FILE: /app/state/checkpoints.json
+      LOG_LEVEL: INFO
+    volumes:
+      - collector_state:/app/state
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  alerts:
+    <<: *app
+    command: [python, -m, app.alerts]
+    environment:
+      POSTGRES_DSN: postgresql://${POSTGRES_USER:-ripe}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ripe_monitoring}
+      CLICKHOUSE_URL: http://clickhouse:8123/
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-ripe}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      TELEGRAM_CONFIG_FILE: /run/telegram/config.json
+      ALERT_POLL_SECONDS: "10"
+    volumes:
+      - ./.secrets/telegram:/run/telegram:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    restart: unless-stopped
+    environment:
+      KAFKA_CLUSTERS_0_NAME: ripe-monitoring
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${KAFKA_UI_PORT:-8080}:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  adminer:
+    image: adminer:4
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  kafka_data:
+  postgres_data:
+  clickhouse_data:
+  analytics_state:
+  collector_state:
+  nifi_conf:
+  nifi_state:
+  nifi_database:
+  nifi_flowfiles:
+  nifi_content:
+  nifi_provenance:
