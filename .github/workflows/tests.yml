@@ -12,6 +12,11 @@ jobs:
       - run: python -m compileall -q collector/app nifi tools bi
       - run: python tools/run_checks.py
       - run: python tools/check_publication.py
+      - run: python tools/audit_documentation.py
+      - name: Check generated references
+        run: |
+          python tools/build_reference_docs.py
+          git diff --exit-code -- docs/FILES_REFERENCE.md docs/DATABASE_REFERENCE.md docs/DASHBOARD_REFERENCE.md
       - name: Check exported dashboard definitions
         run: |
           python tools/export_dashboard_spec.py

@@ -19,7 +19,7 @@
 | `.secrets/telegram/config.json` | Токен власного бота |
 | Docker-томи | БД, агрегати, черги, checkpoints та службовий стан |
 
-Реальні паролі й токени не публікуються. `.env.example` є достатнім шаблоном, bootstrap генерує випадкові значення. Паролі діючих томів не можна обертати простим редагуванням .env: потрібна окрема зміна в самій БД.
+Файли з реальними паролями й токенами не додаються до комітів. Онлайн-копія чотирьох погоджених файлів збережена окремо в GitHub Secrets; [відновлення](REMOTE_CONFIGURATION.md). `.env.example` є достатнім шаблоном, bootstrap генерує випадкові значення. Паролі діючих томів не можна обертати простим редагуванням .env: потрібна окрема зміна в самій БД.
 
 ## Що можна очищувати
 
@@ -29,12 +29,24 @@ Python-кеші `__pycache__`, `.pytest_cache` та тимчасові лока�
 
 ## Зміна й публікація
 
-1. Вносіть зміни в основний код або `bi/dashboards.py`.
-2. Оновіть читабельний експорт: `python tools/export_dashboard_spec.py`.
-3. Виконайте `python tools/run_checks.py`.
-4. Додайте до staging лише код, документацію та публічні артефакти: `git add .` з чинним .gitignore.
-5. Оновіть пофайловий довідник: `python tools/build_reference_docs.py`.
-6. Перевірте staging: `git diff --cached --stat` і `python tools/check_publication.py`.
-7. Збережіть commit і виконайте push.
+Новий файл спочатку опишіть у словнику FILES в tools/build_reference_docs.py. Для нових об’єктів БД оновіть знімок метаданих і пояснення полів. Зміни графіків вносьте до bi/dashboards.py.
 
-За наявності запущеного стека додатково виконайте `python tools/verify_analytics_views.py` та `python tools/verify_metabase.py`. Вони читають дані й не надсилають Telegram-повідомлень. Локальні модульні тести використовують підставні відповіді, не зовнішніх адресатів.
+Послідовність для актуальних файлів, включно з новими:
+
+```bash
+python tools/export_dashboard_spec.py
+python tools/run_checks.py
+git add .
+python tools/build_reference_docs.py
+git add docs/FILES_REFERENCE.md docs/DATABASE_REFERENCE.md docs/DASHBOARD_REFERENCE.md
+python tools/audit_documentation.py
+python tools/check_publication.py
+git diff --cached --check
+git diff --cached --stat
+git commit -m "Update project implementation and documentation"
+git push
+```
+
+Генератор читає список Git, тому нові файли потрібно додати до staging перед генерацією. Після генерації оновлені довідники теж додаються до staging. Звичайна перевірка без змін починається з python tools/audit_documentation.py і не переписує файлів.
+
+За наявності запущеного стека додатково виконайте python tools/verify_analytics_views.py та python tools/verify_metabase.py. Вони читають дані й не надсилають Telegram-повідомлень. Локальні модульні тести використовують підставні відповіді, не зовнішніх адресатів.

@@ -22,11 +22,15 @@ git clone https://github.com/uneavk/ripe-atlas-monitoring.git
 cd ripe-atlas-monitoring
 ```
 
-У папці мають бути README.md, compose.yaml та каталоги collector, clickhouse, postgres, nifi, tools, docs. Усі подальші команди виконуються з кореня репозиторію.
+Репозиторій приватний. GitHub запропонує увійти в дозволений акаунт через браузер або збережений Git Credential Manager. Для чужого акаунта без доступу посилання може показувати 404. Запрошення надаються власником окремо.
+
+У папці мають бути README.md, compose.yaml та каталоги collector, clickhouse, postgres, nifi, bi, tools, docs, artifacts. Усі подальші команди виконуються з кореня репозиторію.
 
 ## Крок 3. Обрати конфігурацію
 
 Для стандартного першого запуску .env вручну не створюйте: bootstrap сам збереже випадкові паролі.
+
+Для відновлення саме наявної конфігурації спочатку отримайте [онлайн-копію через GitHub Actions](REMOTE_CONFIGURATION.md). Це окремий шлях: новому незалежному встановленню можна створити власні паролі. Не перезаписуйте .env діючого стека шаблоном.
 
 Для інших портів спочатку скопіюйте шаблон. PowerShell:
 
@@ -40,7 +44,7 @@ Linux/macOS:
 cp .env.example .env
 ```
 
-Відкрийте .env у редакторі. Замініть усі три replace_with_... на різні випадкові паролі. Для POSTGRES_PASSWORD використовуйте випадкові латинські літери/цифри без URI-спецсимволів; пароль NiFi має бути не коротший за 12 символів. Bootstrap не запуститься із заглушками.
+Відкрийте .env у редакторі. Замініть усі чотири replace_with_... на різні випадкові паролі. Для POSTGRES_PASSWORD використовуйте випадкові латинські літери/цифри без URI-спецсимволів; пароль NiFi має бути не коротший за 12 символів. Bootstrap не запуститься із заглушками.
 
 Для другої незалежної копії на тому самому ПК змініть COMPOSE_PROJECT_NAME та зайняті зовнішні порти. Внутрішні назви postgres, clickhouse, kafka у коді змінювати не потрібно. Після створення .env можна перевірити:
 
@@ -56,7 +60,7 @@ docker compose config --quiet
 python tools/bootstrap.py
 ```
 
-Скрипт створює .env і локальний каталог Telegram, перевіряє Compose, один раз збирає спільний образ collector/analytics/alerts, запускає стек, створює теми Kafka, очікує NiFi, налаштовує 11 процесорів, а потім створює словники, 20 в’ю ClickHouse та 5 reporting-в’ю PostgreSQL. Наприкінці друкує стан контейнерів і Ready.
+Скрипт створює .env і локальний каталог Telegram, перевіряє Compose, один раз збирає спільний образ collector/analytics/alerts, запускає стек, створює теми Kafka, очікує NiFi, налаштовує 11 процесорів, а потім створює словники, 20 в’ю ClickHouse та 5 reporting-в’ю PostgreSQL. Далі очікує Metabase, створює read-only підключення, колекцію, 3 дашборди та 26 SQL-карток. Наприкінці друкує стан контейнерів і Ready.
 
 Перший запуск може тривати кілька хвилин. Waiting for NiFi initialization — очікуване повідомлення запуску JVM. Traceback або завершення з помилкою означає, що налаштування ще не завершене; перейдіть до діагностики нижче.
 
@@ -77,6 +81,7 @@ Kafka, PostgreSQL, ClickHouse та analytics повинні бути healthy; п
 
 | Інтерфейс | Стандартна адреса | Вхід |
 |---|---|---|
+| Metabase | http://localhost:3000 | admin@ripe.local; пароль у .secrets/metabase/admin.json |
 | NiFi | https://localhost:8443/nifi | NIFI_USERNAME / NIFI_PASSWORD із .env |
 | Kafka UI | http://localhost:8080 | Теми та consumer groups |
 | Adminer | http://localhost:8081 | PostgreSQL, сервер postgres, облікові дані з .env |

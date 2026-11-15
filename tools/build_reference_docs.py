@@ -1,6 +1,6 @@
 """Build complete file and schema references from versioned metadata."""
 from pathlib import Path
-import ast,json,subprocess
+import ast,json,re,subprocess
 ROOT=Path(__file__).resolve().parents[1]
 
 FILES={
@@ -75,6 +75,8 @@ FILES={
 FILES.update({'compose.bi.yaml': 'Необов’язкове підключення Metabase до мережі старого Docker-стека. Для нового встановлення достатньо основного compose.yaml.', 'bi/dashboards.py': 'Джерело 3 дашбордів і 26 SQL-карток: показники, підписи, фільтри та налаштування візуалізацій без паролів.', 'bi/dashboard_spec.json': 'Публічний переносимий експорт специфікації дашбордів без локальних ID, адресатів і credentials. Не є vendor-export Metabase.', 'bi/test_dashboards.py': '4 тести SQL-контрактів, пропусків даних, фільтра, геометрії й відсутності доступу до підписників.', 'bi/validation.json': 'Збережені результати виконання 26 карток, додаткового IPv6-фільтра та перевірки геометрії. Не поточний live-статус.', 'tools/setup_metabase.py': 'Ідемпотентно налаштовує Metabase через API, створює BI-reader та власні картки. Паролі й локальні ID записує лише у .secrets.', 'tools/verify_metabase.py': 'Виконує запити всіх BI-карток, IPv6-фільтр та перевірку відсутності перекриття. Звіт містить статуси й кількість рядків без даних адресатів.', 'tools/export_dashboard_spec.py': 'Оновлює bi/dashboard_spec.json із Python-специфікації без запуску Docker або мережі.', 'tools/run_checks.py': 'Виконує 37 прикладних та 4 BI-тести з правильним PYTHONPATH без реальних повідомлень.', 'docs/METABASE.md': 'Вхід, карта дашбордів, відтворення BI, приватні налаштування та діагностика.', 'docs/MAINTENANCE.md': 'Порядок супроводу: публічні та локальні файли, очищення, перевірки й безпечна публікація.', 'artifacts/evidence_snapshot.json': 'Історичний знеособлений контрольний зріз від 09.11.2026, а не поточні дані нової інсталяції.', 'artifacts/screenshots/live-rtt.jpg': 'Реальний скріншот RTT у Metabase від 09.11.2026 без облікових даних.', 'artifacts/screenshots/map-ipv6.jpg': 'Реальна карта останніх результатів K-root IPv6 від 09.11.2026. Містить підпис OpenStreetMap.'})
 
 FILES.update({'.github/workflows/download-configuration.yml': 'Ручний workflow приватного репозиторію: готує download налаштованої GitHub Secrets копії чотирьох конфігураційних файлів. Перевіряє склад і контрольні суми, не показує паролі й не запускає бот.', 'docs/REMOTE_CONFIGURATION.md': 'Онлайн-копія чотирьох конфігураційних файлів у GitHub Secrets: склад, ручне завантаження, приватний доступ та межі відновлення.'})
+
+FILES.update({'docs/README.md': 'Єдина карта всієї документації: структура, файли, БД, KPI, кожна картка аналітики, запуск, локальні/онлайн дані й спосіб перевірки повноти.', 'docs/DASHBOARD_REFERENCE.md': 'Згенерований довідник усіх 3 дашбордів і 26 карток із джерелами, типами візуалізацій, фільтром measurement та правилами читання.', 'tools/audit_documentation.py': 'Без запуску сервісів звіряє покриття всіх файлів/папок, 62 об’єктів БД, 599 стовпців, KPI, BI-експорту, параметрів .env.example та посилань.'})
 
 FIELDS={
 'active':'Чи ввімкнена підписка адресата.', 'address_family':'Числова версія IP у довіднику вимірювань: 4 або 6.', 'af':'4 — IPv4, 6 — IPv6; 0 у службових агрегатах подій підключення.',
@@ -161,10 +163,13 @@ def description(name):
 
 def files_reference():
     tracked=subprocess.check_output(['git','ls-files','-z'],cwd=ROOT).decode().split('\0')
-    paths=set(filter(None,tracked))|set(FILES)
+    paths=set(filter(None,tracked))
     missing=paths-set(FILES)
+    stale=set(FILES)-paths
+    if stale:raise ValueError('Untracked or stale file descriptions: '+str(sorted(stale)))
     if missing:raise ValueError('Missing file descriptions: '+str(sorted(missing)))
     text='# Повний довідник папок і файлів\n\n[Карта документації](../README.md) · [Архітектура](PROJECT_ANALYSIS.md) · [Запуск](START_HERE.md)\n\n'
+    text+=f'Описано {len(paths)} файлів, які відстежує Git. Дані доступу й поточний стан Docker описані окремо нижче.\n\n'
     text+='## Як читати структуру\n\nКод застосунку знаходиться в collector/app, але один образ запускається трьома різними командами: collector, analytics та alerts. Назва папки collector не означає, що всі модулі виконуються перед Kafka. SQL у init створює схему лише на порожньому томі; Python-генератори встановлюють актуальні views під час bootstrap. Міграційні SQL-файли є знімками для ручного використання, не автоматичним менеджером міграцій.\n\n'
     folders={'.github':'Автоматизація GitHub.', '.github/workflows':'Опис CI-перевірок.', 'collector':'Збірка спільного образу Python.', 'collector/app':'Код трьох сервісів і спільні модулі.', 'collector/tests':'Модульні й регресійні тести без зовнішніх сповіщень.', 'clickhouse':'Схема аналітичного сховища.', 'clickhouse/init':'Послідовна ініціалізація порожнього ClickHouse.', 'clickhouse/migrations':'SQL-знімки аналітичного шару.', 'postgres':'Операційна реляційна схема.', 'postgres/init':'Послідовна ініціалізація порожнього PostgreSQL.', 'postgres/migrations':'SQL-знімки операційних звітів.', 'nifi':'Налаштування потоку через REST API.', 'tools':'Команди запуску, перевірок і генерації документації.', 'docs':'Документація, словники та метадані схеми.', 'bi':'Специфікація Metabase та її перевірки.', 'artifacts':'Історичні публічні докази без паролів.', 'artifacts/screenshots':'Реальні збережені екрани Metabase.'}
     text+='## Папки\n\n| Папка | Призначення |\n|---|---|\n'
@@ -178,7 +183,7 @@ def files_reference():
                 tree=ast.parse((ROOT/path).read_text(encoding='utf-8-sig'))
                 names=[n.name for n in tree.body if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef))]
                 if names:text+='Основні програмні інтерфейси: '+', '.join('`'+n+'`' for n in names)+'.\n\n'
-    text+='## Що створюється локально та не входить до Git\n\n| Об’єкт | Призначення |\n|---|---|\n| `.env` | Реальні локальні паролі й порти. |\n| `.secrets/telegram/config.json` | Токен бота; не передавати в репозиторій. |\n| Docker-томи | Вимірювання, агрегати, операційні дані, черги NiFi та Kafka. |\n| `collector_state/checkpoints.json` усередині тому | Завершені REST-діапазони; не SQL-таблиця. |\n| `analytics_state/pending-ingestion.json` усередині тому | Лише незавершений пакет запису; видаляється після підтвердження. |\n| Кеші Python, журнали, backups | Локальні допоміжні файли; виключені .gitignore. |\n'
+    text+='## Що створюється локально та не входить до Git\n\n| Об’єкт | Призначення |\n|---|---|\n| `.env` | Поточні паролі й порти; онлайн-копія зберігається окремо в GitHub Secrets. |\n| `.secrets/metabase/admin.json` | Пароль адміністратора Metabase і BI-reader; включений до погодженої онлайн-копії. |\n| `.secrets/metabase/manifest.json` | ID та URL конкретної інсталяції дашбордів. |\n| `.secrets/metabase/deployment.env` | Окреме підключення Metabase до старого стека, якщо використовується. |\n| `.secrets/configuration-backup-receipt.json` | Локальний протокол перевіреного онлайн-знімка: контрольна сума та ID запуску, без значень паролів. |\n| `.secrets/metabase/last_*_error.json` | Приватна діагностика помилок API або SQL; не входить до Git. |\n| `.secrets/telegram/config.json` | Токен бота; не включений до погодженої онлайн-копії. |\n| Docker-томи | Вимірювання, агрегати, операційні дані, черги NiFi та Kafka. |\n| `collector_state/checkpoints.json` усередині тому | Завершені REST-діапазони; не SQL-таблиця. |\n| `analytics_state/pending-ingestion.json` усередині тому | Лише незавершений пакет запису; видаляється після підтвердження. |\n| Кеші Python, журнали, backups | Локальні допоміжні файли; виключені .gitignore. |\n'
     (ROOT/'docs/FILES_REFERENCE.md').write_text(text,encoding='utf-8',newline='\n')
 
 def database_reference():
@@ -186,7 +191,7 @@ def database_reference():
     fields={c['name'] for db in data.values() for c in db['columns']}
     if fields-set(FIELDS):raise ValueError('Missing field descriptions: '+str(sorted(fields-set(FIELDS))))
     text='# Повний довідник БД, таблиць і в’ю\n\n[Карта документації](../README.md) · [Кінцева аналітика](FINAL_ANALYTICS.md)\n\n'
-    text+='## Відповідальність сховищ\n\nClickHouse: 8 фізичних таблиць, 2 materialized view та 34 звичайних view (14 сумісних у monitoring і 20 користувацьких у analytics). PostgreSQL: 10 фізичних таблиць, 3 внутрішні view у public та 5 користувацьких у reporting. Разом описано 62 об’єкти. PostgreSQL не приймає мережеві вимірювання перед ClickHouse. View — запит до існуючих даних, а не нова незалежна копія.\n\n'
+    text+='## Відповідальність сховищ\n\nClickHouse: 8 фізичних таблиць, 2 materialized view та 34 звичайних view (14 сумісних у monitoring і 20 користувацьких у analytics). PostgreSQL: 10 фізичних таблиць, 3 внутрішні view у public та 5 користувацьких у reporting. Разом описано 62 об’єкти. PostgreSQL не приймає мережеві вимірювання перед ClickHouse. View — запит до існуючих даних, а не нова незалежна копія.\n\nОкрема службова БД Metabase містить внутрішні таблиці продукту й його облікові записи. До 62 прикладних об’єктів і 599 описаних стовпців вони не включені; їхній формат визначає версія Metabase.\n\n'
     text+='## Зв’язки та ключі\n\n```mermaid\nerDiagram\n    monitoring_incidents ||--o| telegram_outbox : incident_id\n    telegram_outbox ||--o{ telegram_deliveries : outbox_id\n    telegram_subscribers ||--o{ telegram_deliveries : chat_id\n    monitoring_incidents ||--o{ incident_episodes : opening_id\n```\n\nУ ClickHouse зонд зв’язує довідник і вимірювання через probe_id/prb_id, а measurement_id/msm_id зв’язує результат із ціллю. Ключ години: hour_start+probe_id+msm_id+af+asn; ключ дня: day+ті самі виміри. ReplacingMergeTree логічно вибирає останню версію: фізичне сортування не є реляційним UNIQUE. Для коректного читання використовуються FINAL і дедуплікація шлюзу.\n\n'
     text+='## Індекс усіх об’єктів\n\n| СУБД | Об’єкт | Тип |\n|---|---|---|\n'
     for label,key,ns in [('ClickHouse','clickhouse','database'),('PostgreSQL','postgresql','schema')]:
@@ -211,5 +216,29 @@ def database_reference():
     text+='\n## Межі зберігання\n\n5 годин застосовуються до сирих таблиць ClickHouse; 48 годин — до накопичувачів годин із захистом незбереженого дня; daily_metrics не очищується. Ці строки не означають автоматичного очищення PostgreSQL, Kafka, довідників або резервних копій. Публікаційний код не містить політики автоматичного видалення операційної історії PostgreSQL.\n\nПовні SQL-визначення й типи зафіксовані у [schema_reference.json](schema_reference.json). Це метадані, без прикладних рядків або секретів. Для оновлення після міграції: `python tools/export_schema_reference.py`, потім `python tools/build_reference_docs.py`.\n'
     (ROOT/'docs/DATABASE_REFERENCE.md').write_text(text,encoding='utf-8',newline='\n')
 
+
+def dashboards_reference():
+    import sys
+    sys.path.insert(0,str(ROOT/'bi'))
+    from dashboards import build
+    dashboards=build()
+    text='# Довідник усіх дашбордів і карток\n\n[Карта документації](README.md) · [Вхід у Metabase](METABASE.md) · [Правила KPI](FINAL_ANALYTICS.md)\n\n'
+    text+=f'Налаштовано {len(dashboards)} дашборди та {sum(len(d["cards"]) for d in dashboards)} SQL-карток. Джерело визначень — [bi/dashboards.py](../bi/dashboards.py), читабельний переносимий експорт — [bi/dashboard_spec.json](../bi/dashboard_spec.json). Локальні ID та адреси залежать від інсталяції.\n\n'
+    text+='Фільтр measurement: 1001 K-root IPv4, 2001 K-root IPv6, 1004 F-root IPv4, 2004 F-root IPv6. Він впливає лише на картки з явно налаштованим параметром. Порівняльні графіки чотирьох серій залишають усі цілі й протоколи.\n\n'
+    types={'table':'Таблиця','scalar':'Одне числове значення','line':'Лінійний графік','bar':'Стовпчиковий графік','map':'Карта'}
+    for dashboard in dashboards:
+        text+='## '+dashboard['name']+'\n\n'+dashboard['description']+'\n\n'
+        for card in dashboard['cards']:
+            sources=sorted(set(re.findall(r'\b(?:analytics|reporting|public)\.[A-Za-z_][A-Za-z0-9_]*',card['sql'])))
+            text+='### `'+card['key']+'` - '+card['name']+'\n\n'
+            text+='| Властивість | Значення |\n|---|---|\n'
+            text+='| Джерело | '+('PostgreSQL' if card['source']=='pg' else 'ClickHouse')+' |\n'
+            text+='| В’ю | '+(', '.join('`'+name+'`' for name in sources) or 'Джерело в SQL специфікації')+' |\n'
+            text+='| Відображення | '+types.get(card['display'],card['display'])+' |\n'
+            text+='| Фільтр measurement | '+('Так, конкретна пара ціль/протокол' if card['measurement'] else 'Ні, самостійний зріз або порівняння серій')+' |\n\n'
+            text+=card['description']+'\n\n'
+    text+='## Обсяг і межі даних\n\nПоточні картки використовують raw-вікно 5 годин або визначене коротше вікно. Години доступні за 48 годин. Поденні графіки обмежують запит останнім роком, а самі денні підсумки зберігаються в ClickHouse безстроково. Нове встановлення починає без попередньої історії. Скріншоти у artifacts датовані 09.11.2026.\n\nСерія без відповіді має NULL RTT. Відсутні спостереження не означають нульових втрат. Один епізод і кілька доставок рахуються окремо. Зонди є вибіркою, а не всіма користувачами країни.\n'
+    (ROOT/'docs/DASHBOARD_REFERENCE.md').write_text(text,encoding='utf-8',newline='\n')
+
 if __name__=='__main__':
-    files_reference();database_reference();print('Built complete file and database references')
+    files_reference();database_reference();dashboards_reference();print('Built complete file, database and dashboard references')

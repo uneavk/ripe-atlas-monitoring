@@ -6,6 +6,8 @@
 
 Після `python tools/bootstrap.py` відкрийте http://localhost:3000. Якщо `METABASE_PORT` змінено, використайте свій порт. Логін `admin@ripe.local`, пароль - локальне поле `password` у `.secrets/metabase/admin.json`. Файл не входить до Git.
 
+[Довідник кожної картки, її джерел, типу й фільтра](DASHBOARD_REFERENCE.md).
+
 У колекції **RIPE Atlas · Лабораторна СТП** є 3 дашборди та 26 карток:
 
 | Дашборд | Карток | Що читати |
