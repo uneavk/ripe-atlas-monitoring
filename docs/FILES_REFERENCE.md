@@ -57,6 +57,10 @@
 
 ## .github/workflows
 
+### [.github/workflows/download-configuration.yml](../.github/workflows/download-configuration.yml)
+
+Ручний workflow приватного репозиторію: готує download налаштованої GitHub Secrets копії чотирьох конфігураційних файлів. Перевіряє склад і контрольні суми, не показує паролі й не запускає бот.
+
 ### [.github/workflows/tests.yml](../.github/workflows/tests.yml)
 
 GitHub Actions: після push або pull request встановлює Python 3.12, залежності, перевіряє компіляцію й виконує модульні тести.
@@ -412,6 +416,10 @@ SQL-знімок п’яти reporting-в’ю. Чинний генератор 
 ### [docs/PROJECT_ANALYSIS.md](../docs/PROJECT_ANALYSIS.md)
 
 Повний аналіз архітектури, потоків, контрактів, відновлення, відповідальності компонентів, реалізованих можливостей і обмежень.
+
+### [docs/REMOTE_CONFIGURATION.md](../docs/REMOTE_CONFIGURATION.md)
+
+Онлайн-копія чотирьох конфігураційних файлів у GitHub Secrets: склад, ручне завантаження, приватний доступ та межі відновлення.
 
 ### [docs/START_HERE.md](../docs/START_HERE.md)
 

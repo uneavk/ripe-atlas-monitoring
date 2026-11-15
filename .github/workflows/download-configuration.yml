@@ -1,0 +1,55 @@
+name: Download saved configuration
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  download:
+    if: github.event.repository.private
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Prepare configuration archive
+        env:
+          CONFIGURATION_BUNDLE: ${{ secrets.RIPE_CONFIGURATION_BACKUP }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64, hashlib, io, json, os, zipfile
+          from pathlib import Path
+
+          value = os.environ.get('CONFIGURATION_BUNDLE', '')
+          if not value:
+              raise SystemExit('RIPE_CONFIGURATION_BACKUP is not configured.')
+          raw = base64.b64decode(value, validate=True)
+          allowed = {
+              '.env',
+              '.secrets/metabase/admin.json',
+              '.secrets/metabase/manifest.json',
+              '.secrets/metabase/deployment.env',
+          }
+          with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+              names = archive.namelist()
+              if len(names) != len(set(names)) or set(names) != allowed | {'configuration-info.json'}:
+                  raise SystemExit('Unexpected configuration archive contents.')
+              if sum(info.file_size for info in archive.infolist()) > 1048576:
+                  raise SystemExit('Configuration archive is too large.')
+              metadata = json.loads(archive.read('configuration-info.json'))
+              if metadata.get('repository') != os.environ['GITHUB_REPOSITORY']:
+                  raise SystemExit('Configuration belongs to another repository.')
+              records = metadata.get('files', [])
+              if len(records) != len(allowed) or {item['path'] for item in records} != allowed:
+                  raise SystemExit('Configuration manifest is incomplete.')
+              for item in records:
+                  if hashlib.sha256(archive.read(item['path'])).hexdigest() != item['sha256']:
+                      raise SystemExit('Configuration integrity check failed.')
+          Path('configuration-backup.zip').write_bytes(raw)
+          print('Configuration archive prepared. Passwords are not printed.')
+          PY
+      - name: Save private download for one day
+        uses: actions/upload-artifact@v4
+        with:
+          name: ripe-configuration-backup
+          path: configuration-backup.zip
+          if-no-files-found: error
+          retention-days: 1
