@@ -11,11 +11,16 @@ def environment():
     path=ROOT/'.env'
     if not path.exists():
         text=(ROOT/'.env.example').read_text(encoding='utf-8')
-        for old in ('replace_with_random_hex_password','replace_with_different_random_hex_password','replace_with_random_password_at_least_12_characters'):
+        for old in ('replace_with_random_hex_password','replace_with_different_random_hex_password','replace_with_random_password_at_least_12_characters','replace_with_random_metabase_db_password'):
             text=text.replace(old,secrets.token_hex(20))
         path.write_text(text,encoding='utf-8')
         print('Created .env with generated local passwords. Keep this file private.',flush=True)
     text=path.read_text(encoding='utf-8-sig')
+    if 'METABASE_DB_PASSWORD=' not in text:
+        text+='\nMETABASE_DB_PASSWORD='+secrets.token_hex(24)+'\n'
+        if not any(line.startswith('METABASE_PORT=') for line in text.splitlines()):
+            text+='METABASE_PORT=3000\n'
+        path.write_text(text,encoding='utf-8')
     if 'replace_with_' in text:raise SystemExit('Replace placeholder passwords in .env before starting.')
     (ROOT/'.secrets/telegram').mkdir(parents=True,exist_ok=True)
 
@@ -28,6 +33,7 @@ def main():
     for module in ('install_kpi','analytics_views'):
         run('docker','compose','exec','-T','analytics','python','-m','app.'+module)
     run('docker','compose','exec','-T','alerts','python','-m','app.operational_views')
+    run(sys.executable,str(ROOT/'tools/setup_metabase.py'))
     run('docker','compose','ps')
     print('Ready. See README.md and docs/CONNECTIONS.md. Fresh samples usually appear within several minutes.',flush=True)
 

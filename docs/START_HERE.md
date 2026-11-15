@@ -106,7 +106,13 @@ ORDER BY measured_at DESC
 LIMIT 100;
 ```
 
-## Крок 8. Побудувати перший графік
+## Крок 8. Відкрити готові дашборди Metabase
+
+Bootstrap уже створює Metabase, підключення для читання та три дашборди. Відкрийте http://localhost:3000 (або METABASE_PORT з .env), увійдіть як admin@ripe.local. Пароль - поле password у локальному .secrets/metabase/admin.json. Відкрийте колекцію RIPE Atlas · Лабораторна СТП. Посилання саме вашої інсталяції зберігаються у .secrets/metabase/manifest.json.
+
+Почніть зі свіжості, потім подивіться RTT, втрати та карту. Фільтр measurement=2001 показує K-root IPv6. Історія й журнал інцидентів знаходяться у двох інших дашбордах. [Повна інструкція Metabase](METABASE.md).
+
+Нижче наведений необов’язковий приклад власного графіка:
 
 ```sql
 SELECT period_start, target_name, ip_version, avg_rtt_ms, packet_loss_pct

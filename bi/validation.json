@@ -1,0 +1,167 @@
+{
+  "checks": [
+    {
+      "dashboard": "live",
+      "question": "freshness",
+      "status": "completed",
+      "rows": 4
+    },
+    {
+      "dashboard": "live",
+      "question": "ipv4_probes",
+      "status": "completed",
+      "rows": 1
+    },
+    {
+      "dashboard": "live",
+      "question": "ipv6_probes",
+      "status": "completed",
+      "rows": 1
+    },
+    {
+      "dashboard": "live",
+      "question": "series_15m",
+      "status": "completed",
+      "rows": 1
+    },
+    {
+      "dashboard": "live",
+      "question": "live_rtt",
+      "status": "completed",
+      "rows": 244
+    },
+    {
+      "dashboard": "live",
+      "question": "live_loss",
+      "status": "completed",
+      "rows": 244
+    },
+    {
+      "dashboard": "live",
+      "question": "live_probes",
+      "status": "completed",
+      "rows": 244
+    },
+    {
+      "dashboard": "live",
+      "question": "live_success",
+      "status": "completed",
+      "rows": 244
+    },
+    {
+      "dashboard": "live",
+      "question": "probe_map",
+      "status": "completed",
+      "rows": 140
+    },
+    {
+      "question": "probe_map_ipv6_filter",
+      "status": "completed",
+      "rows": 44
+    },
+    {
+      "dashboard": "live",
+      "question": "latest_loss",
+      "status": "completed",
+      "rows": 20
+    },
+    {
+      "dashboard": "history",
+      "question": "hour_rtt",
+      "status": "completed",
+      "rows": 192
+    },
+    {
+      "dashboard": "history",
+      "question": "hour_loss",
+      "status": "completed",
+      "rows": 192
+    },
+    {
+      "dashboard": "history",
+      "question": "day_rtt",
+      "status": "completed",
+      "rows": 224
+    },
+    {
+      "dashboard": "history",
+      "question": "day_loss",
+      "status": "completed",
+      "rows": 224
+    },
+    {
+      "dashboard": "history",
+      "question": "day_probes",
+      "status": "completed",
+      "rows": 224
+    },
+    {
+      "dashboard": "history",
+      "question": "asn_rank",
+      "status": "completed",
+      "rows": 3
+    },
+    {
+      "dashboard": "history",
+      "question": "asn_trend",
+      "status": "completed",
+      "rows": 6
+    },
+    {
+      "dashboard": "history",
+      "question": "probe_deviation",
+      "status": "completed",
+      "rows": 20
+    },
+    {
+      "dashboard": "operations",
+      "question": "open_episodes",
+      "status": "completed",
+      "rows": 1
+    },
+    {
+      "dashboard": "operations",
+      "question": "critical_open",
+      "status": "completed",
+      "rows": 1
+    },
+    {
+      "dashboard": "operations",
+      "question": "episodes_daily",
+      "status": "completed",
+      "rows": 17
+    },
+    {
+      "dashboard": "operations",
+      "question": "incident_log",
+      "status": "completed",
+      "rows": 100
+    },
+    {
+      "dashboard": "operations",
+      "question": "observed_duration",
+      "status": "completed",
+      "rows": 3
+    },
+    {
+      "dashboard": "operations",
+      "question": "processing_errors",
+      "status": "completed",
+      "rows": 54
+    },
+    {
+      "dashboard": "operations",
+      "question": "error_reasons",
+      "status": "completed",
+      "rows": 20
+    },
+    {
+      "dashboard": "operations",
+      "question": "delivery_status",
+      "status": "completed",
+      "rows": 7
+    }
+  ],
+  "layout": "no overlaps",
+  "ipv6_filter": "passed"
+}

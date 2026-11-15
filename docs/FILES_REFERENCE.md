@@ -24,6 +24,9 @@
 | `nifi/` | Налаштування потоку через REST API. |
 | `tools/` | Команди запуску, перевірок і генерації документації. |
 | `docs/` | Документація, словники та метадані схеми. |
+| `bi/` | Специфікація Metabase та її перевірки. |
+| `artifacts/` | Історичні публічні докази без паролів. |
+| `artifacts/screenshots/` | Реальні збережені екрани Metabase. |
 
 ## Корінь
 
@@ -42,6 +45,10 @@
 ### [README.md](../README.md)
 
 Головна сторінка: призначення, схема роботи, карта документації, короткий запуск і посилання на повні довідники.
+
+### [compose.bi.yaml](../compose.bi.yaml)
+
+Необов’язкове підключення Metabase до мережі старого Docker-стека. Для нового встановлення достатньо основного compose.yaml.
 
 ### [compose.yaml](../compose.yaml)
 
@@ -317,11 +324,17 @@ SQL-знімок п’яти reporting-в’ю. Чинний генератор 
 
 Перевіряє тільки файли, які відстежує Git: шукає типові токени, приватні ключі, локальні шляхи та файли стану. Не є заміною повного аудиту секретів.
 
-Основні програмні інтерфейси: `main`.
+Основні програмні інтерфейси: `inspect_file`, `main`.
 
 ### [tools/configure_telegram.py](../tools/configure_telegram.py)
 
 Приховано запитує токен і записує його тільки в .secrets/telegram/config.json. Сам не надсилає повідомлень і не перевіряє токен через мережу.
+
+Основні програмні інтерфейси: `main`.
+
+### [tools/export_dashboard_spec.py](../tools/export_dashboard_spec.py)
+
+Оновлює bi/dashboard_spec.json із Python-специфікації без запуску Docker або мережі.
 
 Основні програмні інтерфейси: `main`.
 
@@ -335,9 +348,27 @@ SQL-знімок п’яти reporting-в’ю. Чинний генератор 
 
 Основні програмні інтерфейси: `run`, `main`.
 
+### [tools/run_checks.py](../tools/run_checks.py)
+
+Виконує 37 прикладних та 4 BI-тести з правильним PYTHONPATH без реальних повідомлень.
+
+Основні програмні інтерфейси: `main`.
+
+### [tools/setup_metabase.py](../tools/setup_metabase.py)
+
+Ідемпотентно налаштовує Metabase через API, створює BI-reader та власні картки. Паролі й локальні ID записує лише у .secrets.
+
+Основні програмні інтерфейси: `API`, `inspect`, `container_python`, `configure_readers`, `items`, `layout`, `main`.
+
 ### [tools/verify_analytics_views.py](../tools/verify_analytics_views.py)
 
 Виконує SELECT до 20 analytics-в’ю, перевіряє відсутність формульних колонок і звіряє поденні суми, DISTINCT та зважені середні зі сховищем. На хості делегує перевірку Docker.
+
+### [tools/verify_metabase.py](../tools/verify_metabase.py)
+
+Виконує запити всіх BI-карток, IPv6-фільтр та перевірку відсутності перекриття. Звіт містить статуси й кількість рядків без даних адресатів.
+
+Основні програмні інтерфейси: `main`.
 
 
 ## docs
@@ -370,6 +401,14 @@ SQL-знімок п’яти reporting-в’ю. Чинний генератор 
 
 Каталог усіх 25 внутрішніх/публічних KPI з одиницями, формулами та правилами агрегації.
 
+### [docs/MAINTENANCE.md](../docs/MAINTENANCE.md)
+
+Порядок супроводу: публічні та локальні файли, очищення, перевірки й безпечна публікація.
+
+### [docs/METABASE.md](../docs/METABASE.md)
+
+Вхід, карта дашбордів, відтворення BI, приватні налаштування та діагностика.
+
 ### [docs/PROJECT_ANALYSIS.md](../docs/PROJECT_ANALYSIS.md)
 
 Повний аналіз архітектури, потоків, контрактів, відновлення, відповідальності компонентів, реалізованих можливостей і обмежень.
@@ -385,6 +424,47 @@ SQL-знімок п’яти reporting-в’ю. Чинний генератор 
 ### [docs/schema_reference.json](../docs/schema_reference.json)
 
 Версійований знімок структури: 44 об’єкти ClickHouse та 18 PostgreSQL, стовпці, SQL визначень і обмеження. Не містить вимірювань або даних підписників.
+
+
+## bi
+
+### [bi/dashboard_spec.json](../bi/dashboard_spec.json)
+
+Публічний переносимий експорт специфікації дашбордів без локальних ID, адресатів і credentials. Не є vendor-export Metabase.
+
+### [bi/dashboards.py](../bi/dashboards.py)
+
+Джерело 3 дашбордів і 26 SQL-карток: показники, підписи, фільтри та налаштування візуалізацій без паролів.
+
+Основні програмні інтерфейси: `card`, `trend`, `build`.
+
+### [bi/test_dashboards.py](../bi/test_dashboards.py)
+
+4 тести SQL-контрактів, пропусків даних, фільтра, геометрії й відсутності доступу до підписників.
+
+Основні програмні інтерфейси: `DashboardContracts`.
+
+### [bi/validation.json](../bi/validation.json)
+
+Збережені результати виконання 26 карток, додаткового IPv6-фільтра та перевірки геометрії. Не поточний live-статус.
+
+
+## artifacts
+
+### [artifacts/evidence_snapshot.json](../artifacts/evidence_snapshot.json)
+
+Історичний знеособлений контрольний зріз від 09.11.2026, а не поточні дані нової інсталяції.
+
+
+## artifacts/screenshots
+
+### [artifacts/screenshots/live-rtt.jpg](../artifacts/screenshots/live-rtt.jpg)
+
+Реальний скріншот RTT у Metabase від 09.11.2026 без облікових даних.
+
+### [artifacts/screenshots/map-ipv6.jpg](../artifacts/screenshots/map-ipv6.jpg)
+
+Реальна карта останніх результатів K-root IPv6 від 09.11.2026. Містить підпис OpenStreetMap.
 
 ## Що створюється локально та не входить до Git
 

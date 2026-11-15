@@ -1,0 +1,3408 @@
+[
+  {
+    "key": "live",
+    "name": "01 · Поточний стан мережі",
+    "description": "Оновлення щохвилини. Дві цілі та два протоколи аналізуються окремо; карта і таблиця зондів залежать від вибраного measurement.",
+    "cards": [
+      {
+        "key": "freshness",
+        "name": "Свіжість чотирьох джерел",
+        "sql": "SELECT target_name,ip_version,latest_measurement_at,data_age_seconds,measurements_last_5h,probes_observed_last_5h,data_status FROM analytics.data_freshness ORDER BY measurement_id",
+        "display": "table",
+        "source": "ch",
+        "description": "Давність >15 хв означає застарілі дані. Під час backfill стан може тимчасово бути застарілим.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "ipv4_probes",
+        "name": "Зондів IPv4 · останні 15 хв",
+        "sql": "SELECT uniqExact(probe_id) AS value FROM analytics.measurements_live WHERE ip_version='IPv4' AND measured_at>=now()-INTERVAL 15 MINUTE",
+        "display": "scalar",
+        "source": "ch",
+        "description": "DISTINCT між обома цілями: зонд рахується один раз.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "ipv6_probes",
+        "name": "Зондів IPv6 · останні 15 хв",
+        "sql": "SELECT uniqExact(probe_id) AS value FROM analytics.measurements_live WHERE ip_version='IPv6' AND measured_at>=now()-INTERVAL 15 MINUTE",
+        "display": "scalar",
+        "source": "ch",
+        "description": "Менша вибірка IPv6 не означає автоматично проблему IPv6.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "series_15m",
+        "name": "Серій ping · останні 15 хв",
+        "sql": "SELECT count() AS value FROM analytics.measurements_live WHERE measured_at>=now()-INTERVAL 15 MINUTE",
+        "display": "scalar",
+        "source": "ch",
+        "description": "Серія містить декілька пакетів. Це кількість результатів, не пакетів.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "live_rtt",
+        "name": "Затримка · мс",
+        "sql": "SELECT toStartOfFiveMinutes(now()-INTERVAL 5 HOUR)+toIntervalMinute(n.number*5) AS period_start,concat(m.target_name,' · ',m.ip_version) AS series,if(v.measurement_count=0,NULL,v.avg_rtt_ms) AS value FROM numbers(61) n CROSS JOIN analytics.measurement_directory m LEFT JOIN analytics.network_5minutes v ON v.period_start=toStartOfFiveMinutes(now()-INTERVAL 5 HOUR)+toIntervalMinute(n.number*5) AND v.measurement_id=m.measurement_id ORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "Середнє валідних RTT серій; NULL без відповідей. Кожна ціль та IP-версія — окрема лінія. Розриви ліній означають відсутні спостереження, не нуль.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Затримка · мс",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "live_loss",
+        "name": "Втрати пакетів · %",
+        "sql": "SELECT toStartOfFiveMinutes(now()-INTERVAL 5 HOUR)+toIntervalMinute(n.number*5) AS period_start,concat(m.target_name,' · ',m.ip_version) AS series,if(v.measurement_count=0,NULL,v.packet_loss_pct) AS value FROM numbers(61) n CROSS JOIN analytics.measurement_directory m LEFT JOIN analytics.network_5minutes v ON v.period_start=toStartOfFiveMinutes(now()-INTERVAL 5 HOUR)+toIntervalMinute(n.number*5) AND v.measurement_id=m.measurement_id ORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "Втрата зі співвідношення сум пакетів. Останній 5-хвилинний інтервал може бути неповним. Розриви ліній означають відсутні спостереження, не нуль.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Втрати пакетів · %",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "live_probes",
+        "name": "Покриття · різні зонди",
+        "sql": "SELECT toStartOfFiveMinutes(now()-INTERVAL 5 HOUR)+toIntervalMinute(n.number*5) AS period_start,concat(m.target_name,' · ',m.ip_version) AS series,if(v.measurement_count=0,NULL,v.probes_observed) AS value FROM numbers(61) n CROSS JOIN analytics.measurement_directory m LEFT JOIN analytics.network_5minutes v ON v.period_start=toStartOfFiveMinutes(now()-INTERVAL 5 HOUR)+toIntervalMinute(n.number*5) AND v.measurement_id=m.measurement_id ORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "Різні зонди кожної цілі/AF у періоді. Це не відсоток населення. Розриви ліній означають відсутні спостереження, не нуль.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Покриття · різні зонди",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "live_success",
+        "name": "Серії з відповіддю · %",
+        "sql": "SELECT toStartOfFiveMinutes(now()-INTERVAL 5 HOUR)+toIntervalMinute(n.number*5) AS period_start,concat(m.target_name,' · ',m.ip_version) AS series,if(v.measurement_count=0,NULL,v.successful_measurements_pct) AS value FROM numbers(61) n CROSS JOIN analytics.measurement_directory m LEFT JOIN analytics.network_5minutes v ON v.period_start=toStartOfFiveMinutes(now()-INTERVAL 5 HOUR)+toIntervalMinute(n.number*5) AND v.measurement_id=m.measurement_id ORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "Хоча б один отриманий пакет робить серію успішною; це не часова availability. Розриви ліній означають відсутні спостереження, не нуль.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Серії з відповіддю · %",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "probe_map",
+        "name": "Карта останніх втрат · обране вимірювання",
+        "sql": "SELECT probe_id,any(target_name) AS target_name,any(ip_version) AS ip_version,\nargMax(q.latitude,q.measured_at) AS latitude,argMax(q.longitude,q.measured_at) AS longitude,\nargMax(packet_loss_pct,measured_at) AS packet_loss_pct,max(measured_at) AS last_measured_at\nFROM analytics.measurements_live q WHERE q.measurement_id={{measurement}} AND q.latitude IS NOT NULL AND q.longitude IS NOT NULL\nGROUP BY probe_id",
+        "display": "map",
+        "source": "ch",
+        "description": "Остання серія на зонд. Оберіть measurement: 1001 K-root IPv4; 2001 K-root IPv6; 1004 F-root IPv4; 2004 F-root IPv6.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "map.type": "pin",
+          "map.latitude_column": "latitude",
+          "map.longitude_column": "longitude",
+          "map.metric_column": "packet_loss_pct",
+          "map.pin_type": "markers",
+          "map.center_latitude": 48.5,
+          "map.center_longitude": 31.3,
+          "map.zoom": 5
+        },
+        "measurement": true
+      },
+      {
+        "key": "latest_loss",
+        "name": "Зонди з найбільшими поточними втратами",
+        "sql": "SELECT probe_id,any(provider_name) AS provider_name,\nargMax(packet_loss_pct,measured_at) AS packet_loss_pct,max(measured_at) AS last_measured_at\nFROM analytics.measurements_live WHERE measurement_id={{measurement}}\nGROUP BY probe_id ORDER BY packet_loss_pct DESC,last_measured_at DESC LIMIT 20",
+        "display": "table",
+        "source": "ch",
+        "description": "Останній результат, а не підтверджений інцидент. Перевірте повтори в журналі інцидентів.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": true
+      }
+    ]
+  },
+  {
+    "key": "history",
+    "name": "02 · Історія та провайдери",
+    "description": "Завершені години за 48 год і постійна поденна історія. Новій системі потрібен час для першої фіналізації.",
+    "cards": [
+      {
+        "key": "hour_rtt",
+        "name": "Завершені години · затримка, мс",
+        "sql": "SELECT toStartOfHour(now())-toIntervalHour(48-n.number) AS period_start,concat(m.target_name,' · ',m.ip_version) AS series,if(v.measurement_count=0,NULL,v.avg_rtt_ms) AS value FROM numbers(48) n CROSS JOIN analytics.measurement_directory m LEFT JOIN analytics.network_hourly v ON v.period_start=toStartOfHour(now())-toIntervalHour(48-n.number) AND v.measurement_id=m.measurement_id ORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "48 годин. Поточна незавершена година не показується. Розриви ліній означають відсутні спостереження, не нуль.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Завершені години · затримка, мс",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "hour_loss",
+        "name": "Завершені години · втрати, %",
+        "sql": "SELECT toStartOfHour(now())-toIntervalHour(48-n.number) AS period_start,concat(m.target_name,' · ',m.ip_version) AS series,if(v.measurement_count=0,NULL,v.packet_loss_pct) AS value FROM numbers(48) n CROSS JOIN analytics.measurement_directory m LEFT JOIN analytics.network_hourly v ON v.period_start=toStartOfHour(now())-toIntervalHour(48-n.number) AND v.measurement_id=m.measurement_id ORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "Зважені packet-loss KPI, окремо за ціллю та AF. Розриви ліній означають відсутні спостереження, не нуль.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Завершені години · втрати, %",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "day_rtt",
+        "name": "Поденна історія · затримка, мс",
+        "sql": "WITH (SELECT if(count()=0,today()-7,greatest(ifNull(min(toDate(period_start)),today()-7),today()-365)) FROM analytics.network_daily) AS first_day SELECT toDateTime(addDays(first_day,n.number),'Europe/Kyiv') AS period_start,concat(m.target_name,' · ',m.ip_version) AS series,if(v.measurement_count=0,NULL,v.avg_rtt_ms) AS value FROM numbers(assumeNotNull(toUInt64(greatest(1,dateDiff('day',first_day,today()))))) n CROSS JOIN analytics.measurement_directory m LEFT JOIN analytics.network_daily v ON v.period_start=toDateTime(addDays(first_day,n.number),'Europe/Kyiv') AND v.measurement_id=m.measurement_id ORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "Зважене середнє за кількістю валідних серій. Доба фіналізується після 04:00 за Києвом. Розриви ліній означають відсутні спостереження, не нуль.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Поденна історія · затримка, мс",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "day_loss",
+        "name": "Поденна історія · втрати, %",
+        "sql": "WITH (SELECT if(count()=0,today()-7,greatest(ifNull(min(toDate(period_start)),today()-7),today()-365)) FROM analytics.network_daily) AS first_day SELECT toDateTime(addDays(first_day,n.number),'Europe/Kyiv') AS period_start,concat(m.target_name,' · ',m.ip_version) AS series,if(v.measurement_count=0,NULL,v.packet_loss_pct) AS value FROM numbers(assumeNotNull(toUInt64(greatest(1,dateDiff('day',first_day,today()))))) n CROSS JOIN analytics.measurement_directory m LEFT JOIN analytics.network_daily v ON v.period_start=toDateTime(addDays(first_day,n.number),'Europe/Kyiv') AND v.measurement_id=m.measurement_id ORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "Дні з відсутніми спостереженнями не підміняються нульовими втратами. Розриви ліній означають відсутні спостереження, не нуль.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Поденна історія · втрати, %",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "day_probes",
+        "name": "Поденне покриття · зонди",
+        "sql": "WITH (SELECT if(count()=0,today()-7,greatest(ifNull(min(toDate(period_start)),today()-7),today()-365)) FROM analytics.network_daily) AS first_day SELECT toDateTime(addDays(first_day,n.number),'Europe/Kyiv') AS period_start,concat(m.target_name,' · ',m.ip_version) AS series,if(v.measurement_count=0,NULL,v.probes_observed) AS value FROM numbers(assumeNotNull(toUInt64(greatest(1,dateDiff('day',first_day,today()))))) n CROSS JOIN analytics.measurement_directory m LEFT JOIN analytics.network_daily v ON v.period_start=toDateTime(addDays(first_day,n.number),'Europe/Kyiv') AND v.measurement_id=m.measurement_id ORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "DISTINCT за днем, а не сума годинних кількостей. Розриви ліній означають відсутні спостереження, не нуль.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Поденне покриття · зонди",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "asn_rank",
+        "name": "Провайдери · остання завершена година",
+        "sql": "SELECT provider_name,packet_loss_pct,avg_rtt_ms,probes_observed,measurement_count,period_start\nFROM analytics.providers_hourly\nWHERE measurement_id={{measurement}} AND probes_observed>=4\nAND period_start=(SELECT max(period_start) FROM analytics.providers_hourly WHERE measurement_id={{measurement}})\nORDER BY packet_loss_pct DESC,avg_rtt_ms DESC LIMIT 15",
+        "display": "table",
+        "source": "ch",
+        "description": "Не менше 4 спостережуваних зондів; рейтинг тільки одного measurement. ASN — не завжди комерційна назва провайдера.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": true
+      },
+      {
+        "key": "asn_trend",
+        "name": "Провайдери · погодинні втрати, %",
+        "sql": "SELECT period_start,provider_name AS series,packet_loss_pct AS value\nFROM analytics.providers_hourly WHERE measurement_id={{measurement}} AND probes_observed>=4\nAND provider_asn IN (SELECT provider_asn FROM analytics.providers_hourly WHERE measurement_id={{measurement}} GROUP BY provider_asn ORDER BY sum(measurement_count) DESC LIMIT 8)\nORDER BY period_start,series",
+        "display": "line",
+        "source": "ch",
+        "description": "До 8 ASN із найбільшою кількістю вимірювань; середні відсотки повторно не агрегуються.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Провайдери · погодинні втрати, %",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          },
+          "series_settings": {
+            "K-root · IPv4": {
+              "line.missing": "none"
+            },
+            "K-root · IPv6": {
+              "line.missing": "none"
+            },
+            "F-root · IPv4": {
+              "line.missing": "none"
+            },
+            "F-root · IPv6": {
+              "line.missing": "none"
+            }
+          }
+        },
+        "measurement": true
+      },
+      {
+        "key": "probe_deviation",
+        "name": "Зонди · відхилення від середнього вибірки",
+        "sql": "SELECT p.probe_id,p.provider_name,p.avg_rtt_ms,n.avg_rtt_ms AS network_rtt_ms,\np.avg_rtt_ms-n.avg_rtt_ms AS deviation_ms,p.packet_loss_pct,p.measurement_count,p.period_start\nFROM analytics.probes_hourly p INNER JOIN analytics.network_hourly n ON p.period_start=n.period_start AND p.measurement_id=n.measurement_id\nWHERE p.measurement_id={{measurement}} AND p.avg_rtt_ms IS NOT NULL\nAND p.period_start=(SELECT max(period_start) FROM analytics.network_hourly WHERE measurement_id={{measurement}})\nORDER BY deviation_ms DESC LIMIT 20",
+        "display": "table",
+        "source": "ch",
+        "description": "Порівняння з вибіркою тієї самої цілі. Це аналітичне відхилення, не baseline-правило HIGH_RTT.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": true
+      }
+    ]
+  },
+  {
+    "key": "operations",
+    "name": "03 · Інциденти та якість потоку",
+    "description": "Відкриття/відновлення епізодів, діагностика й фактична доставка. Порожній журнал не є доказом здорової мережі: звіряйте свіжість.",
+    "cards": [
+      {
+        "key": "open_episodes",
+        "name": "Відкритих епізодів",
+        "sql": "SELECT count(*) AS value FROM reporting.incidents WHERE resolved_at IS NULL",
+        "display": "scalar",
+        "source": "pg",
+        "description": "Один episode_id рахується один раз; включає проблеми свіжості потоку.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "critical_open",
+        "name": "Критичних відкритих епізодів",
+        "sql": "SELECT count(*) AS value FROM reporting.incidents WHERE resolved_at IS NULL AND severity='critical'",
+        "display": "scalar",
+        "source": "pg",
+        "description": "Підозра за вибіркою не є доведеною аварією всього провайдера.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "episodes_daily",
+        "name": "Нові епізоди за днями",
+        "sql": "SELECT day AS period_start,incident_type AS series,sum(incident_count) AS value FROM reporting.incidents_daily GROUP BY day,incident_type ORDER BY day,incident_type",
+        "display": "bar",
+        "source": "pg",
+        "description": "Час початку епізоду. Тривала аварія не додається щодня як нова.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Нові епізоди за днями",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "incident_log",
+        "name": "Журнал інцидентів та відновлень",
+        "sql": "SELECT started_at,incident_type,severity,incident_status,probe_id,provider_asn,measurement_id,ip_version,resolved_at,notification_status FROM reporting.incidents ORDER BY started_at DESC LIMIT 100",
+        "display": "table",
+        "source": "pg",
+        "description": "Початок, остання критичність, відновлення й стан сповіщення. Telegram-доставка перевіряється окремо.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "observed_duration",
+        "name": "Завершені епізоди · спостережувана тривалість",
+        "sql": "SELECT incident_type,count(*) AS episodes,round(avg(extract(epoch FROM(resolved_at-started_at)))/60.0,2) AS mean_minutes FROM reporting.incidents WHERE resolved_at IS NOT NULL AND incident_type<>'PIPELINE_STALE' GROUP BY incident_type ORDER BY mean_minutes DESC",
+        "display": "table",
+        "source": "pg",
+        "description": "Хвилини за спостереженнями. Це не гарантований час ремонту від фактичного початку аварії.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "processing_errors",
+        "name": "Помилки обробки за годинами",
+        "sql": "SELECT period_start,stage AS series,sum(rejected_events) AS value FROM reporting.processing_errors_hourly GROUP BY period_start,stage ORDER BY period_start,stage",
+        "display": "bar",
+        "source": "pg",
+        "description": "Час запису діагностики, тому розбір старої черги може давати поточний пік.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Помилки обробки за годинами",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "error_reasons",
+        "name": "Причини відхилення повідомлень",
+        "sql": "SELECT stage,reason,sum(rejected_events) AS rejected_events FROM reporting.processing_errors_hourly GROUP BY stage,reason ORDER BY rejected_events DESC LIMIT 20",
+        "display": "table",
+        "source": "pg",
+        "description": "Помилка валідації не означає аварію мережі.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      },
+      {
+        "key": "delivery_status",
+        "name": "Доставка Telegram за днями",
+        "sql": "SELECT day AS period_start,delivery_status AS series,delivery_count AS value FROM reporting.telegram_deliveries_daily ORDER BY day,delivery_status",
+        "display": "bar",
+        "source": "pg",
+        "description": "Одна доставка = один адресат. Expired означає прострочене повідомлення, не здорову мережу.",
+        "settings": {
+          "graph.colors": [
+            "#2563eb",
+            "#ea580c",
+            "#16a34a",
+            "#9333ea",
+            "#dc2626",
+            "#0891b2"
+          ],
+          "table.pivot": false,
+          "graph.dimensions": [
+            "period_start",
+            "series"
+          ],
+          "graph.metrics": [
+            "value"
+          ],
+          "graph.show_values": false,
+          "graph.show_trendline": false,
+          "graph.x_axis.title_text": "Час · Київ",
+          "graph.y_axis.title_text": "Доставка Telegram за днями",
+          "graph.show_goal": false,
+          "graph.missing_value": "none",
+          "column_settings": {
+            "[\"name\",\"target_name\"]": {
+              "column_title": "Ціль"
+            },
+            "[\"name\",\"ip_version\"]": {
+              "column_title": "Протокол"
+            },
+            "[\"name\",\"latest_measurement_at\"]": {
+              "column_title": "Останні дані"
+            },
+            "[\"name\",\"data_age_seconds\"]": {
+              "column_title": "Давність, с"
+            },
+            "[\"name\",\"measurements_last_5h\"]": {
+              "column_title": "Серії за 5 год"
+            },
+            "[\"name\",\"probes_observed_last_5h\"]": {
+              "column_title": "Зондів за 5 год"
+            },
+            "[\"name\",\"data_status\"]": {
+              "column_title": "Стан"
+            },
+            "[\"name\",\"probe_id\"]": {
+              "column_title": "Зонд",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"provider_name\"]": {
+              "column_title": "Провайдер (ASN)"
+            },
+            "[\"name\",\"packet_loss_pct\"]": {
+              "column_title": "Втрати, %"
+            },
+            "[\"name\",\"avg_rtt_ms\"]": {
+              "column_title": "RTT, мс"
+            },
+            "[\"name\",\"last_measured_at\"]": {
+              "column_title": "Час результату"
+            },
+            "[\"name\",\"probes_observed\"]": {
+              "column_title": "Зондiв"
+            },
+            "[\"name\",\"measurement_count\"]": {
+              "column_title": "Серій"
+            },
+            "[\"name\",\"period_start\"]": {
+              "column_title": "Період"
+            },
+            "[\"name\",\"network_rtt_ms\"]": {
+              "column_title": "RTT вибірки, мс"
+            },
+            "[\"name\",\"deviation_ms\"]": {
+              "column_title": "Відхилення, мс"
+            },
+            "[\"name\",\"started_at\"]": {
+              "column_title": "Початок"
+            },
+            "[\"name\",\"incident_type\"]": {
+              "column_title": "Тип інциденту"
+            },
+            "[\"name\",\"severity\"]": {
+              "column_title": "Критичність"
+            },
+            "[\"name\",\"incident_status\"]": {
+              "column_title": "Стан епізоду"
+            },
+            "[\"name\",\"provider_asn\"]": {
+              "column_title": "ASN",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"measurement_id\"]": {
+              "column_title": "Вимірювання",
+              "number_separators": ".",
+              "decimals": 0
+            },
+            "[\"name\",\"resolved_at\"]": {
+              "column_title": "Відновлення"
+            },
+            "[\"name\",\"notification_status\"]": {
+              "column_title": "Сповіщення"
+            },
+            "[\"name\",\"episodes\"]": {
+              "column_title": "Епізодів"
+            },
+            "[\"name\",\"mean_minutes\"]": {
+              "column_title": "Середня тривалість, хв"
+            },
+            "[\"name\",\"stage\"]": {
+              "column_title": "Стадія"
+            },
+            "[\"name\",\"reason\"]": {
+              "column_title": "Причина"
+            },
+            "[\"name\",\"rejected_events\"]": {
+              "column_title": "Відхилених записів"
+            }
+          }
+        },
+        "measurement": false
+      }
+    ]
+  }
+]
