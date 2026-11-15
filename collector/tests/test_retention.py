@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime,timedelta,timezone
 from zoneinfo import ZoneInfo
-from app.retention import finalized_day,instant,values,seconds_to_next_run
+from app.retention_clickhouse import finalized_day,instant,values,seconds_to_next_run
 
 class RetentionTests(unittest.TestCase):
     def test_scheduler_wakes_at_four_am_boundary(self):

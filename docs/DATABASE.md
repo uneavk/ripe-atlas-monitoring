@@ -1,6 +1,6 @@
 # Повний довідник БД, таблиць і в’ю
 
-[Карта документації](../README.md) · [Кінцева аналітика](FINAL_ANALYTICS.md)
+[Карта документації](../README.md) · [Кінцева аналітика](ANALYTICS.md)
 
 ## Відповідальність сховищ
 
@@ -1124,4 +1124,4 @@ Materialized view на INSERT у probe_events. Пише status_ingest_request у
 
 5 годин застосовуються до сирих таблиць ClickHouse; 48 годин — до накопичувачів годин із захистом незбереженого дня; daily_metrics не очищується. Ці строки не означають автоматичного очищення PostgreSQL, Kafka, довідників або резервних копій. Публікаційний код не містить політики автоматичного видалення операційної історії PostgreSQL.
 
-Повні SQL-визначення й типи зафіксовані у [schema_reference.json](schema_reference.json). Це метадані, без прикладних рядків або секретів. Для оновлення після міграції: `python tools/export_schema_reference.py`, потім `python tools/build_reference_docs.py`.
+Повні SQL-визначення й типи зафіксовані у [schema_reference.json](schema_reference.json). Це метадані, без прикладних рядків або секретів. Для оновлення після міграції: `python tools/docs.py --schema`, потім `python tools/docs.py`.

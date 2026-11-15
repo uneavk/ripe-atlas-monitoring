@@ -35,6 +35,6 @@ def main():
     run('docker','compose','exec','-T','alerts','python','-m','app.operational_views')
     run(sys.executable,str(ROOT/'tools/setup_metabase.py'))
     run('docker','compose','ps')
-    print('Ready. See README.md and docs/CONNECTIONS.md. Fresh samples usually appear within several minutes.',flush=True)
+    print('Ready. See README.md and docs/SETUP.md. Fresh samples usually appear within several minutes.',flush=True)
 
 if __name__=='__main__':main()

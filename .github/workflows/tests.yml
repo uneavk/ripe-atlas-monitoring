@@ -10,14 +10,8 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r collector/requirements.txt
       - run: python -m compileall -q collector/app nifi tools bi
-      - run: python tools/run_checks.py
-      - run: python tools/check_publication.py
-      - run: python tools/audit_documentation.py
-      - name: Check generated references
+      - run: python tools/checks.py
+      - name: Check generated documentation and exports
         run: |
-          python tools/build_reference_docs.py
-          git diff --exit-code -- docs/FILES_REFERENCE.md docs/DATABASE_REFERENCE.md docs/DASHBOARD_REFERENCE.md
-      - name: Check exported dashboard definitions
-        run: |
-          python tools/export_dashboard_spec.py
-          git diff --exit-code -- bi/dashboard_spec.json
+          python tools/docs.py
+          git diff --exit-code -- docs/FILES.md docs/DATABASE.md docs/ANALYTICS.md docs/KPI_DICTIONARY.csv bi/dashboard_spec.json

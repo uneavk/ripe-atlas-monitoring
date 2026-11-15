@@ -60,7 +60,7 @@ services:
       - "${BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -80,7 +80,7 @@ services:
       - "${BIND_ADDRESS:-127.0.0.1}:${CLICKHOUSE_NATIVE_PORT:-9000}:9000"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
-      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
     healthcheck:
       test: [CMD-SHELL, "clickhouse-client --user $${CLICKHOUSE_USER} --password $${CLICKHOUSE_PASSWORD} --query 'SELECT 1' >/dev/null 2>&1"]
       interval: 5s

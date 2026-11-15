@@ -1,19 +1,55 @@
-"""Check documentation coverage and exported contracts without starting services."""
+"""Run focused checks without sending external notifications."""
 from pathlib import Path
-import ast
-import csv
-import json
-import re
-import subprocess
-import sys
-from urllib.parse import unquote, urlparse
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'tools'))
-sys.path.insert(0, str(ROOT / 'bi'))
-import build_reference_docs as reference
+import argparse,ast,csv,json,os,re,subprocess,sys
+from urllib.parse import unquote,urlparse
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'tools'))
+sys.path.insert(0,str(ROOT/'bi'))
+import docs as reference
 from dashboards import build
+PATTERNS=[
+    ('telegram_token',re.compile(r'\b\d{7,12}:[A-Za-z0-9_-]{30,}\b')),
+    ('github_token',re.compile(r'\b(?:gh[pousr]_[A-Za-z0-9]{25,}|github_pat_[A-Za-z0-9_]{25,})\b')),
+    ('private_key',re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----')),
+    ('local_profile_path',re.compile(r'(?:[A-Za-z]:\\Users\\|[A-Za-z]:/Users/)',re.I)),
+]
+PRIVATE_SUFFIXES={'.db','.dump','.sqlite','.sqlite3','.log','.pem','.key','.zip','.gz','.pyc'}
 
+def inspect_file(name):
+    path=ROOT/name
+    if (any(part in {'.secrets','backups','data','volumes','state','logs','.venv','__pycache__'} for part in path.relative_to(ROOT).parts)
+        or (path.name.startswith('.env') and path.name!='.env.example') or path.suffix.lower() in PRIVATE_SUFFIXES):
+        return ['runtime_or_private_file']
+    raw=path.read_bytes()
+    if path.suffix.lower()=='.png':
+        return [] if raw.startswith(b'\x89PNG\r\n\x1a\n') else ['invalid_png']
+    if path.suffix.lower() in {'.jpg','.jpeg'}:
+        return [] if raw.startswith(b'\xff\xd8\xff') and raw.endswith(b'\xff\xd9') else ['invalid_jpeg']
+    try:text=raw.decode('utf-8-sig')
+    except UnicodeDecodeError:return ['unexpected_binary_file']
+    issues=[label for label,pattern in PATTERNS if pattern.search(text)]
+    if path.suffix.lower()=='.json':
+        try:
+            def walk(value):
+                if isinstance(value,dict):
+                    for key,item in value.items():
+                        if key.lower() in {'password','data_password','token','api_key','access_token','client_secret'} and isinstance(item,str) and item and not item.startswith(('replace_with_','${')):
+                            issues.append('credential_literal')
+                        walk(item)
+                elif isinstance(value,list):
+                    for item in value:walk(item)
+            walk(json.loads(text))
+        except json.JSONDecodeError:issues.append('invalid_json')
+    return issues
+
+def publication():
+    paths=subprocess.check_output(['git','ls-files','-z'],cwd=ROOT).decode().split('\0')
+    problems=[(name,label) for name in filter(None,paths) for label in inspect_file(name)]
+    if problems:
+        for name,label in problems:print(name,label)
+        raise SystemExit('Publication check failed')
+    print('PASS: tracked files contain no detected credentials, runtime files or local profile paths.')
+    print('PNG/JPEG files are signature-checked; their visible contents require visual review.')
 
 def audit():
     tracked = set(filter(None, subprocess.check_output(
@@ -25,7 +61,7 @@ def audit():
         if not condition:
             issues.append(message)
 
-    catalog = (ROOT / 'docs/FILES_REFERENCE.md').read_text(encoding='utf-8')
+    catalog = (ROOT / 'docs/FILES.md').read_text(encoding='utf-8')
     documented = re.findall(r'^### \[([^\]]+)\]\(\.\./[^)]+\)', catalog, re.M)
     require(set(documented) == tracked and len(documented) == len(tracked),
             'File reference must describe every tracked file exactly once')
@@ -58,7 +94,7 @@ def audit():
             link_count += 1
 
     metadata = json.loads((ROOT / 'docs/schema_reference.json').read_text(encoding='utf-8'))
-    database_doc = (ROOT / 'docs/DATABASE_REFERENCE.md').read_text(encoding='utf-8')
+    database_doc = (ROOT / 'docs/DATABASE.md').read_text(encoding='utf-8')
     object_names = set()
     column_count = 0
     for key, namespace in [('clickhouse', 'database'), ('postgresql', 'schema')]:
@@ -86,8 +122,8 @@ def audit():
     exported = json.loads((ROOT / 'bi/dashboard_spec.json').read_text(encoding='utf-8'))
     require(spec == exported, 'Dashboard JSON differs from Python specification')
     card_keys = [c['key'] for d in spec for c in d['cards']]
-    dashboard_doc = (ROOT / 'docs/DASHBOARD_REFERENCE.md').read_text(encoding='utf-8')
-    documented_cards = re.findall(r'^### `([^`]+)`', dashboard_doc, re.M)
+    dashboard_doc = (ROOT / 'docs/ANALYTICS.md').read_text(encoding='utf-8')
+    documented_cards = re.findall(r'^#### `([^`]+)`', dashboard_doc, re.M)
     require(documented_cards == card_keys, 'Dashboard reference does not cover every card in order')
 
     tree = ast.parse((ROOT / 'collector/app/kpi_catalog.py').read_text(encoding='utf-8'))
@@ -97,20 +133,20 @@ def audit():
         rows = list(csv.DictReader(stream, delimiter=';'))
     require([row['Код KPI'] for row in rows] == [k[0] for k in kpis],
             'CSV KPI dictionary differs from source catalog')
-    kpi_doc = (ROOT / 'docs/KPI_DICTIONARY.md').read_text(encoding='utf-8')
+    kpi_doc = (ROOT / 'docs/ANALYTICS.md').read_text(encoding='utf-8')
     for code, name, unit, *_ in kpis:
         require(f'| {code} | {name} | {unit} |' in kpi_doc, 'Missing KPI definition: ' + code)
 
     example = (ROOT / '.env.example').read_text(encoding='utf-8')
     variables = re.findall(r'^([A-Z][A-Z0-9_]*)=', example, re.M)
-    connection_doc = (ROOT / 'docs/CONNECTIONS.md').read_text(encoding='utf-8')
+    connection_doc = (ROOT / 'docs/SETUP.md').read_text(encoding='utf-8')
     for variable in variables:
         require(f'| {variable} |' in connection_doc, 'Undocumented environment variable: ' + variable)
 
-    index = (ROOT / 'docs/README.md').read_text(encoding='utf-8')
+    index = (ROOT / 'README.md').read_text(encoding='utf-8')
     for name in tracked:
-        if name.startswith('docs/') and name.endswith('.md') and name != 'docs/README.md':
-            require('(' + Path(name).name + ')' in index, 'Documentation index omits ' + name)
+        if name.startswith('docs/') and name.endswith('.md'):
+            require('(' + name + ')' in index, 'Documentation index omits ' + name)
 
     if issues:
         raise SystemExit('\n'.join(issues))
@@ -118,6 +154,23 @@ def audit():
                 columns=column_count, kpi_definitions=len(kpis), dashboards=len(spec),
                 cards=len(card_keys), environment_variables=len(variables), local_links=link_count)
 
+def unit():
+    env=dict(os.environ)
+    env['PYTHONPATH']=os.pathsep.join([str(ROOT/'collector'),env.get('PYTHONPATH','')])
+    env['PYTHONDONTWRITEBYTECODE']='1'
+    for folder in ('collector/tests','bi'):
+        subprocess.run([sys.executable,'-m','unittest','discover','-s',folder,'-p','test_*.py','-v'],cwd=ROOT,env=env,check=True)
+    print('PASS application and dashboard tests; no live messages sent')
 
-if __name__ == '__main__':
-    print('PASS documentation audit: ' + json.dumps(audit(), ensure_ascii=False))
+def main():
+    parser=argparse.ArgumentParser(description='Run offline project checks')
+    parser.add_argument('--unit',action='store_true',help='Run application and BI unit tests')
+    parser.add_argument('--docs',action='store_true',help='Verify complete documentation coverage')
+    parser.add_argument('--publication',action='store_true',help='Check files tracked by Git')
+    args=parser.parse_args()
+    all_checks=not(args.unit or args.docs or args.publication)
+    if all_checks or args.unit:unit()
+    if all_checks or args.docs:print('PASS documentation audit: '+json.dumps(audit(),ensure_ascii=False))
+    if all_checks or args.publication:publication()
+
+if __name__=='__main__':main()
