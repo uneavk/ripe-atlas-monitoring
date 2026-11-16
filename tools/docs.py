@@ -240,6 +240,8 @@ FILES.update({'artifacts/handin/README.md': 'Сценарій командног
                                                     'сторінки.'})
 FOLDERS.update({'artifacts/handin': 'Готові матеріали для захисту, сценарій, демонстраційні SQL та контрольний зріз.', 'artifacts/handin/screenshots': '16 оригіналів реальних екранів Docker, GitHub, Kafka, NiFi, DBeaver та Metabase від 16.11.2026.'})
 
+FILES.update({'artifacts/handin/RIPE_Atlas_Team_Defense.docx': 'Готовий сценарій виступу Яни, Вікторії та Валерії за 15 слайдами, жива демонстрація і 50 відповідей на можливі запитання.'})
+
 FIELDS={'active': 'Чи ввімкнена підписка адресата.',
  'address_family': 'Числова версія IP у довіднику вимірювань: 4 або 6.',
  'af': '4 — IPv4, 6 — IPv6; 0 у службових агрегатах подій підключення.',

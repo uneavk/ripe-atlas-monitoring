@@ -41,6 +41,22 @@ def inspect_file(name):
                         issues.extend(label for label,pattern in PATTERNS if pattern.search(xml))
                 return sorted(set(issues))
         except (OSError,UnicodeError,zipfile.BadZipFile):return ['invalid_pptx']
+    if name=='artifacts/handin/RIPE_Atlas_Team_Defense.docx':
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as package:
+                names=set(package.namelist())
+                required={'[Content_Types].xml','_rels/.rels','word/document.xml','word/styles.xml'}
+                if not required<=names:return ['invalid_docx']
+                if sum(info.file_size for info in package.infolist())>10*1024*1024:return ['oversize_docx']
+                if any(n.startswith(('word/embeddings/','word/activeX/')) or n.lower().endswith('vbaproject.bin') for n in names):
+                    return ['unexpected_docx_attachment']
+                issues=[]
+                for part in names:
+                    if part.endswith(('.xml','.rels')):
+                        xml=package.read(part).decode('utf-8-sig')
+                        issues.extend(label for label,pattern in PATTERNS if pattern.search(xml))
+                return sorted(set(issues))
+        except (OSError,UnicodeError,zipfile.BadZipFile):return ['invalid_docx']
     if path.suffix.lower()=='.png':
         return [] if raw.startswith(b'\x89PNG\r\n\x1a\n') else ['invalid_png']
     if path.suffix.lower() in {'.jpg','.jpeg'}:
@@ -69,7 +85,7 @@ def publication():
         for name,label in problems:print(name,label)
         raise SystemExit('Publication check failed')
     print('PASS: tracked files contain no detected credentials, runtime files or local profile paths.')
-    print('PNG/JPEG/PDF signatures and the approved PPTX package/XML are checked; visible contents require visual review.')
+    print('PNG/JPEG/PDF signatures and the approved PPTX/DOCX packages/XML are checked; visible contents require visual review.')
 
 def audit():
     tracked = set(filter(None, subprocess.check_output(

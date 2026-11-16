@@ -2,7 +2,7 @@
 
 Потоковий моніторинг українських зондів RIPE Atlas: RTT, втрати пакетів, IPv4/IPv6, історія, інциденти та 3 дашборди Metabase. Усі сервіси розгортаються через Docker Compose.
 
-Матеріали для захисту: [звіт PDF](artifacts/handin/RIPE_Atlas_Report.pdf), [презентація](artifacts/handin/RIPE_Atlas_Defense.pptx), [сценарій для трьох учасниць і SQL-демонстрація](artifacts/handin/README.md).
+Матеріали для захисту: [звіт PDF](artifacts/handin/RIPE_Atlas_Report.pdf), [презентація](artifacts/handin/RIPE_Atlas_Defense.pptx), [виступи команди та 50 відповідей](artifacts/handin/RIPE_Atlas_Team_Defense.docx), [сценарій для трьох учасниць і SQL-демонстрація](artifacts/handin/README.md).
 
 ## Запуск
 

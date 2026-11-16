@@ -2,7 +2,7 @@
 
 [Головна](../README.md) · [Архітектура](ARCHITECTURE.md) · [Запуск](SETUP.md)
 
-Описано всі 87 файлів і 15 папок, які відстежує Git.
+Описано всі 88 файлів і 15 папок, які відстежує Git.
 
 Один Python-образ запускає три різні сервіси: collector, analytics та alerts. Початкові схеми містяться у clickhouse/init.sql та postgres/init.sql. Аналітичні в’ю створюють Python-модулі під час bootstrap. Специфікація Metabase має власний JSON-експорт.
 
@@ -84,6 +84,10 @@ GitHub Actions: модульні тести, повнота документац
 ### [artifacts/handin/RIPE_Atlas_Report.pdf](../artifacts/handin/RIPE_Atlas_Report.pdf)
 
 Звіт на 18 сторінках: зв’язний опис системи, 2 схеми, 16 реальних скріншотів, KPI, помилки, аналітика та джерела.
+
+### [artifacts/handin/RIPE_Atlas_Team_Defense.docx](../artifacts/handin/RIPE_Atlas_Team_Defense.docx)
+
+Готовий сценарій виступу Яни, Вікторії та Валерії за 15 слайдами, жива демонстрація і 50 відповідей на можливі запитання.
 
 ### [artifacts/handin/architecture.svg](../artifacts/handin/architecture.svg)
 
