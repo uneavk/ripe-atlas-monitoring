@@ -162,6 +162,79 @@ FOLDERS={'.github': 'Автоматизація GitHub.',
  'postgres': 'Єдина початкова операційна схема.',
  'tools': 'Запуск, документація та перевірки.'}
 
+
+# Reviewed hand-in materials, dated 2026-11-16.
+FILES.update({'artifacts/handin/README.md': 'Сценарій командного захисту, призначення матеріалів, запуск і 14 '
+                               'датованих оригіналів скріншотів.',
+ 'artifacts/handin/RIPE_Atlas_Defense.pptx': 'Редагована презентація з 15 слайдів і нотатками для '
+                                             'рівного виступу трьох учасниць. Датовані докази, '
+                                             '16.11.2026.',
+ 'artifacts/handin/RIPE_Atlas_Report.pdf': 'Звіт на 17 сторінках із 14 реальними скріншотами, схемою '
+                                           'фактичної конфігурації NiFi, запуском, БД, KPI, правилами '
+                                           'та джерелами. Зріз 16.11.2026.',
+ 'artifacts/handin/demo_clickhouse.sql': '13 запитів лише на читання для DBeaver: структура, протоколи, '
+                                         'години/дні, KPI, маркери INSERT і штучні приклади в SELECT '
+                                         'без запису даних.',
+ 'artifacts/handin/demo_postgres.sql': '5 запитів лише на читання: епізоди, підсумки інцидентів, '
+                                       'діагностика та стани доставки без адресатів Telegram.',
+ 'artifacts/handin/screenshots/01-docker-live.jpg': 'Реальний оригінал скріншота від 16.11.2026. 2. '
+                                                    'Docker Desktop: служби проєкту та журнал успішних '
+                                                    'публікацій collector у ripe.raw. Поточний запуск, '
+                                                    '16.11.2026.',
+ 'artifacts/handin/screenshots/02-github-structure.jpg': 'Реальний оригінал скріншота від 16.11.2026. '
+                                                         '1. Структура та команди перевірки у README на '
+                                                         'GitHub. Фрагмент реального екрана від '
+                                                         '16.11.2026.',
+ 'artifacts/handin/screenshots/03-kafka-topics.jpg': 'Реальний оригінал скріншота від 16.11.2026. 3. '
+                                                     'Теми Kafka UI. Порожня ripe.validated - '
+                                                     'успадкована тема, поточний потік її не '
+                                                     'використовує. Фрагмент екрана.',
+ 'artifacts/handin/screenshots/04-kafka-consumers.jpg': 'Реальний оригінал скріншота від 16.11.2026. 4. '
+                                                        'Окремі consumer groups NiFi та діагностики. '
+                                                        'STABLE означає стабільне членство в групі. N/A '
+                                                        'у lag не означає нуль відставання. Фрагмент '
+                                                        'екрана.',
+ 'artifacts/handin/screenshots/05-dbeaver-clickhouse-views.jpg': 'Реальний оригінал скріншота від '
+                                                                 '16.11.2026. 5. DBeaver: 8 фізичних '
+                                                                 'таблиць monitoring і результат запиту '
+                                                                 'до каталогу 44 об’єктів ClickHouse.',
+ 'artifacts/handin/screenshots/06-dbeaver-ip-versions.jpg': 'Реальний оригінал скріншота від '
+                                                            '16.11.2026. 6. data_freshness у DBeaver: '
+                                                            'чотири джерела, IP-версія, давність даних '
+                                                            'і фактично спостережувані зонди.',
+ 'artifacts/handin/screenshots/07-dbeaver-retention.jpg': 'Реальний оригінал скріншота від 16.11.2026. '
+                                                          '7. Маркери вставок, last_maintenance і '
+                                                          'перевірка raw_rows_older_than_5h=0. Час '
+                                                          'маркерів зберігається в UTC.',
+ 'artifacts/handin/screenshots/08-dbeaver-kpi.jpg': 'Реальний оригінал скріншота від 16.11.2026. 8. '
+                                                    'network_hourly_kpi: назва, одиниця та значення KPI '
+                                                    'останньої завершеної години для K-root IPv4.',
+ 'artifacts/handin/screenshots/09-metabase-rtt.jpg': 'Реальний оригінал скріншота від 16.11.2026. 11. '
+                                                     'Дашборд поточного стану, картка RTT: окрема лінія '
+                                                     'для кожної цілі й IP-версії. Дані згруповані по 5 '
+                                                     'хвилин.',
+ 'artifacts/handin/screenshots/10-metabase-daily.jpg': 'Реальний оригінал скріншота від 16.11.2026. 13. '
+                                                       'Поденні середні: історія зберігає також давніші '
+                                                       'вересневі дані.',
+ 'artifacts/handin/screenshots/11-metabase-ipv6-map.jpg': 'Реальний оригінал скріншота від 16.11.2026. '
+                                                          '14. Карта K-root IPv6, measurement=2001, 47 '
+                                                          'рядків на момент знімка. Підкладка © '
+                                                          'OpenStreetMap contributors, Leaflet.',
+ 'artifacts/handin/screenshots/12-metabase-hourly.jpg': 'Реальний оригінал скріншота від 16.11.2026. '
+                                                        '12. Завершені години: видимі розриви даних.',
+ 'artifacts/handin/screenshots/13-metabase-incidents.jpg': 'Реальний оригінал скріншота від 16.11.2026. '
+                                                           '10. Журнал Metabase розрізняє відкриті та '
+                                                           'відновлені епізоди. Знімок показує реальні '
+                                                           'спостереження, 16.11.2026.',
+ 'artifacts/handin/screenshots/14-dbeaver-postgresql.jpg': 'Реальний оригінал скріншота від 16.11.2026. '
+                                                           '9. DBeaver/PostgreSQL: реальні епізоди з '
+                                                           'протоколом, часом Києва, станом і статусом '
+                                                           'сповіщення.',
+ 'artifacts/handin/verification.json': 'Знеособлений контрольний зріз від 16.11.2026: БД, 18 '
+                                       'перевірених запитів, Docker і фактичні процесори/зв’язки NiFi. '
+                                       'Не містить секретів чи сирих подій.'})
+FOLDERS.update({'artifacts/handin': 'Готові матеріали для захисту, сценарій, демонстраційні SQL та контрольний зріз.', 'artifacts/handin/screenshots': '14 оригіналів реальних екранів Docker, GitHub, Kafka, DBeaver та Metabase від 16.11.2026.'})
+
 FIELDS={'active': 'Чи ввімкнена підписка адресата.',
  'address_family': 'Числова версія IP у довіднику вимірювань: 4 або 6.',
  'af': '4 — IPv4, 6 — IPv6; 0 у службових агрегатах подій підключення.',

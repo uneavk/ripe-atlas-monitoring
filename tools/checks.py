@@ -1,6 +1,6 @@
 """Run focused checks without sending external notifications."""
 from pathlib import Path
-import argparse,ast,csv,json,os,re,subprocess,sys
+import argparse,ast,csv,io,json,os,re,subprocess,sys,zipfile
 from urllib.parse import unquote,urlparse
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
@@ -21,6 +21,26 @@ def inspect_file(name):
         or (path.name.startswith('.env') and path.name!='.env.example') or path.suffix.lower() in PRIVATE_SUFFIXES):
         return ['runtime_or_private_file']
     raw=path.read_bytes()
+    # Only these reviewed hand-in documents are accepted as new binary types.
+    # Visible PDF/image content still requires manual review, just like screenshots.
+    if name=='artifacts/handin/RIPE_Atlas_Report.pdf':
+        return [] if raw.startswith(b'%PDF-') and b'%%EOF' in raw[-2048:] and len(raw)>10000 else ['invalid_pdf']
+    if name=='artifacts/handin/RIPE_Atlas_Defense.pptx':
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as package:
+                names=set(package.namelist())
+                required={'[Content_Types].xml','_rels/.rels','ppt/presentation.xml'}
+                if not required<=names:return ['invalid_pptx']
+                if sum(info.file_size for info in package.infolist())>50*1024*1024:return ['oversize_pptx']
+                if any(n.startswith('ppt/embeddings/') or n.lower().endswith('vbaproject.bin') for n in names):
+                    return ['unexpected_pptx_attachment']
+                issues=[]
+                for part in names:
+                    if part.endswith(('.xml','.rels')):
+                        xml=package.read(part).decode('utf-8-sig')
+                        issues.extend(label for label,pattern in PATTERNS if pattern.search(xml))
+                return sorted(set(issues))
+        except (OSError,UnicodeError,zipfile.BadZipFile):return ['invalid_pptx']
     if path.suffix.lower()=='.png':
         return [] if raw.startswith(b'\x89PNG\r\n\x1a\n') else ['invalid_png']
     if path.suffix.lower() in {'.jpg','.jpeg'}:
@@ -49,7 +69,7 @@ def publication():
         for name,label in problems:print(name,label)
         raise SystemExit('Publication check failed')
     print('PASS: tracked files contain no detected credentials, runtime files or local profile paths.')
-    print('PNG/JPEG files are signature-checked; their visible contents require visual review.')
+    print('PNG/JPEG/PDF signatures and the approved PPTX package/XML are checked; visible contents require visual review.')
 
 def audit():
     tracked = set(filter(None, subprocess.check_output(

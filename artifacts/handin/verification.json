@@ -1,0 +1,629 @@
+{
+  "captured_at_utc": "2026-11-16T10:25:44.915508+00:00",
+  "source_commit": "8e4dbdf950ef88ba05bf714c4022cb3199abdb87",
+  "clickhouse": {
+    "demo_statements": [
+      {
+        "statement": 1,
+        "rows": 44
+      },
+      {
+        "statement": 2,
+        "rows": 4
+      },
+      {
+        "statement": 3,
+        "rows": 15
+      },
+      {
+        "statement": 4,
+        "rows": 4
+      },
+      {
+        "statement": 5,
+        "rows": 16
+      },
+      {
+        "statement": 6,
+        "rows": 20
+      },
+      {
+        "statement": 7,
+        "rows": 12
+      },
+      {
+        "statement": 8,
+        "rows": 1
+      },
+      {
+        "statement": 9,
+        "rows": 1
+      },
+      {
+        "statement": 10,
+        "rows": 24
+      },
+      {
+        "statement": 11,
+        "rows": 1
+      },
+      {
+        "statement": 12,
+        "rows": 1
+      },
+      {
+        "statement": 13,
+        "rows": 2
+      }
+    ],
+    "freshness": [
+      {
+        "measurement_id": 1001,
+        "target_name": "K-root",
+        "ip_version": "IPv4",
+        "latest_measurement_at": "2026-11-16 12:24:33.000",
+        "data_age_seconds": "69",
+        "measurements_last_5h": "8942",
+        "probes_observed_last_5h": "148",
+        "data_status": "Дані надходять"
+      },
+      {
+        "measurement_id": 1004,
+        "target_name": "F-root",
+        "ip_version": "IPv4",
+        "latest_measurement_at": "2026-11-16 12:23:13.000",
+        "data_age_seconds": "149",
+        "measurements_last_5h": "8937",
+        "probes_observed_last_5h": "148",
+        "data_status": "Дані надходять"
+      },
+      {
+        "measurement_id": 2001,
+        "target_name": "K-root",
+        "ip_version": "IPv6",
+        "latest_measurement_at": "2026-11-16 12:24:21.000",
+        "data_age_seconds": "81",
+        "measurements_last_5h": "2889",
+        "probes_observed_last_5h": "47",
+        "data_status": "Дані надходять"
+      },
+      {
+        "measurement_id": 2004,
+        "target_name": "F-root",
+        "ip_version": "IPv6",
+        "latest_measurement_at": "2026-11-16 12:23:02.000",
+        "data_age_seconds": "160",
+        "measurements_last_5h": "2874",
+        "probes_observed_last_5h": "47",
+        "data_status": "Дані надходять"
+      }
+    ],
+    "raw_bounds": [
+      {
+        "series": "23642",
+        "first_event_utc": "2026-11-16 05:51:43.000",
+        "last_event_utc": "2026-11-16 10:24:33.000",
+        "expired": "0"
+      }
+    ],
+    "directory_size": [
+      {
+        "probes": "814"
+      }
+    ],
+    "completed_hour": [
+      {
+        "period_start": "2026-11-16 11:00:00",
+        "measurement_id": 1001,
+        "target_name": "K-root",
+        "ip_version": "IPv4",
+        "measurement_count": "2161",
+        "probes_observed": "145",
+        "avg_rtt_ms": 31.282318886943656,
+        "packet_loss_pct": 0.9263547938860583
+      },
+      {
+        "period_start": "2026-11-16 11:00:00",
+        "measurement_id": 1004,
+        "target_name": "F-root",
+        "ip_version": "IPv4",
+        "measurement_count": "2161",
+        "probes_observed": "146",
+        "avg_rtt_ms": 13.58346693843284,
+        "packet_loss_pct": 0.880716934487021
+      },
+      {
+        "period_start": "2026-11-16 11:00:00",
+        "measurement_id": 2001,
+        "target_name": "K-root",
+        "ip_version": "IPv6",
+        "measurement_count": "703",
+        "probes_observed": "47",
+        "avg_rtt_ms": 34.19742927083333,
+        "packet_loss_pct": 7.827324478178368
+      },
+      {
+        "period_start": "2026-11-16 11:00:00",
+        "measurement_id": 2004,
+        "target_name": "F-root",
+        "ip_version": "IPv6",
+        "measurement_count": "703",
+        "probes_observed": "47",
+        "avg_rtt_ms": 15.887373767958655,
+        "packet_loss_pct": 8.353108685334599
+      }
+    ],
+    "daily_window": [
+      {
+        "day": "2026-10-26",
+        "stored_rows": "414",
+        "series": "141485",
+        "sources": "4"
+      },
+      {
+        "day": "2026-10-27",
+        "stored_rows": "412",
+        "series": "140631",
+        "sources": "4"
+      },
+      {
+        "day": "2026-10-28",
+        "stored_rows": "412",
+        "series": "142254",
+        "sources": "4"
+      },
+      {
+        "day": "2026-10-29",
+        "stored_rows": "414",
+        "series": "143177",
+        "sources": "4"
+      },
+      {
+        "day": "2026-10-30",
+        "stored_rows": "146",
+        "series": "3919",
+        "sources": "1"
+      },
+      {
+        "day": "2026-10-31",
+        "stored_rows": "416",
+        "series": "88233",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-01",
+        "stored_rows": "418",
+        "series": "141060",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-02",
+        "stored_rows": "420",
+        "series": "141844",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-03",
+        "stored_rows": "414",
+        "series": "137797",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-04",
+        "stored_rows": "416",
+        "series": "132953",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-05",
+        "stored_rows": "410",
+        "series": "137002",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-06",
+        "stored_rows": "405",
+        "series": "34551",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-07",
+        "stored_rows": "392",
+        "series": "29711",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-08",
+        "stored_rows": "412",
+        "series": "132645",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-09",
+        "stored_rows": "405",
+        "series": "49508",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-10",
+        "stored_rows": "412",
+        "series": "136226",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-11",
+        "stored_rows": "392",
+        "series": "19461",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-12",
+        "stored_rows": "412",
+        "series": "140114",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-13",
+        "stored_rows": "408",
+        "series": "141245",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-14",
+        "stored_rows": "418",
+        "series": "143280",
+        "sources": "4"
+      },
+      {
+        "day": "2026-11-15",
+        "stored_rows": "396",
+        "series": "50013",
+        "sources": "4"
+      }
+    ],
+    "schema_counts": [
+      {
+        "database": "analytics",
+        "engine": "View",
+        "objects": "20"
+      },
+      {
+        "database": "monitoring",
+        "engine": "MaterializedView",
+        "objects": "2"
+      },
+      {
+        "database": "monitoring",
+        "engine": "ReplacingMergeTree",
+        "objects": "8"
+      },
+      {
+        "database": "monitoring",
+        "engine": "View",
+        "objects": "14"
+      }
+    ],
+    "markers": [
+      {
+        "key": "ingest_request",
+        "value": "2026-11-16 10:25:41.768"
+      },
+      {
+        "key": "last_maintenance",
+        "value": "2026-11-16T10:25:42.163459+00:00"
+      },
+      {
+        "key": "status_ingest_request",
+        "value": "2026-11-16 10:10:30.884"
+      }
+    ]
+  },
+  "postgresql": {
+    "demo_statements": [
+      {
+        "statement": 1,
+        "rows": 18
+      },
+      {
+        "statement": 2,
+        "rows": 20
+      },
+      {
+        "statement": 3,
+        "rows": 31
+      },
+      {
+        "statement": 4,
+        "rows": 134
+      },
+      {
+        "statement": 5,
+        "rows": 13
+      }
+    ],
+    "episodes": [
+      {
+        "incident_type": "ASN_OUTAGE",
+        "incident_status": "Триває",
+        "episodes": 1
+      },
+      {
+        "incident_type": "HIGH_RTT",
+        "incident_status": "Відновлено",
+        "episodes": 46
+      },
+      {
+        "incident_type": "HIGH_RTT",
+        "incident_status": "Триває",
+        "episodes": 4
+      },
+      {
+        "incident_type": "PACKET_LOSS",
+        "incident_status": "Відновлено",
+        "episodes": 57
+      },
+      {
+        "incident_type": "PACKET_LOSS",
+        "incident_status": "Триває",
+        "episodes": 10
+      },
+      {
+        "incident_type": "PIPELINE_STALE",
+        "incident_status": "Відновлено",
+        "episodes": 53
+      },
+      {
+        "incident_type": "PIPELINE_STALE",
+        "incident_status": "Триває",
+        "episodes": 3
+      },
+      {
+        "incident_type": "PROBE_DOWN",
+        "incident_status": "Відновлено",
+        "episodes": 118
+      },
+      {
+        "incident_type": "PROBE_DOWN",
+        "incident_status": "Триває",
+        "episodes": 14
+      },
+      {
+        "incident_type": "REGION_OUTAGE",
+        "incident_status": "Триває",
+        "episodes": 1
+      }
+    ],
+    "delivery_totals": [
+      {
+        "delivery_status": "expired",
+        "deliveries": "82"
+      },
+      {
+        "delivery_status": "sent",
+        "deliveries": "1078"
+      }
+    ]
+  },
+  "nifi": {
+    "processors": [
+      {
+        "name": "Store ping_results",
+        "type": "InvokeHTTP",
+        "state": "RUNNING"
+      },
+      {
+        "name": "Validate and transform ripe.raw",
+        "type": "ExecuteScript",
+        "state": "RUNNING"
+      },
+      {
+        "name": "Store probe_directory",
+        "type": "InvokeHTTP",
+        "state": "RUNNING"
+      },
+      {
+        "name": "Read ripe.probes",
+        "type": "ConsumeKafka_2_6",
+        "state": "RUNNING"
+      },
+      {
+        "name": "Read ripe.probe_status",
+        "type": "ConsumeKafka_2_6",
+        "state": "RUNNING"
+      },
+      {
+        "name": "Describe rejected events",
+        "type": "ExecuteScript",
+        "state": "RUNNING"
+      },
+      {
+        "name": "Read ripe.raw",
+        "type": "ConsumeKafka_2_6",
+        "state": "RUNNING"
+      },
+      {
+        "name": "Validate and transform ripe.probe_status",
+        "type": "ExecuteScript",
+        "state": "RUNNING"
+      },
+      {
+        "name": "Validate and transform ripe.probes",
+        "type": "ExecuteScript",
+        "state": "RUNNING"
+      },
+      {
+        "name": "RIPE invalid events",
+        "type": "PublishKafka_2_6",
+        "state": "RUNNING"
+      },
+      {
+        "name": "Store probe_events",
+        "type": "InvokeHTTP",
+        "state": "RUNNING"
+      }
+    ],
+    "connections": [
+      {
+        "from": "Validate and transform ripe.probe_status",
+        "to": "Describe rejected events",
+        "relationships": [
+          "failure"
+        ]
+      },
+      {
+        "from": "Store probe_directory",
+        "to": "Store probe_directory",
+        "relationships": [
+          "Retry"
+        ]
+      },
+      {
+        "from": "Validate and transform ripe.probe_status",
+        "to": "Store probe_events",
+        "relationships": [
+          "success"
+        ]
+      },
+      {
+        "from": "RIPE invalid events",
+        "to": "RIPE invalid events",
+        "relationships": [
+          "failure"
+        ]
+      },
+      {
+        "from": "Store ping_results",
+        "to": "Describe rejected events",
+        "relationships": [
+          "No Retry"
+        ]
+      },
+      {
+        "from": "Store probe_directory",
+        "to": "Describe rejected events",
+        "relationships": [
+          "No Retry"
+        ]
+      },
+      {
+        "from": "Store probe_events",
+        "to": "Store probe_events",
+        "relationships": [
+          "Retry"
+        ]
+      },
+      {
+        "from": "Store ping_results",
+        "to": "Store ping_results",
+        "relationships": [
+          "Retry"
+        ]
+      },
+      {
+        "from": "Store probe_events",
+        "to": "Store probe_events",
+        "relationships": [
+          "Failure"
+        ]
+      },
+      {
+        "from": "Read ripe.raw",
+        "to": "Validate and transform ripe.raw",
+        "relationships": [
+          "success"
+        ]
+      },
+      {
+        "from": "Validate and transform ripe.raw",
+        "to": "Describe rejected events",
+        "relationships": [
+          "failure"
+        ]
+      },
+      {
+        "from": "Describe rejected events",
+        "to": "RIPE invalid events",
+        "relationships": [
+          "success"
+        ]
+      },
+      {
+        "from": "Validate and transform ripe.probes",
+        "to": "Describe rejected events",
+        "relationships": [
+          "failure"
+        ]
+      },
+      {
+        "from": "Read ripe.probe_status",
+        "to": "Validate and transform ripe.probe_status",
+        "relationships": [
+          "success"
+        ]
+      },
+      {
+        "from": "Describe rejected events",
+        "to": "RIPE invalid events",
+        "relationships": [
+          "failure"
+        ]
+      },
+      {
+        "from": "Store probe_directory",
+        "to": "Store probe_directory",
+        "relationships": [
+          "Failure"
+        ]
+      },
+      {
+        "from": "Validate and transform ripe.raw",
+        "to": "Store ping_results",
+        "relationships": [
+          "success"
+        ]
+      },
+      {
+        "from": "Store probe_events",
+        "to": "Describe rejected events",
+        "relationships": [
+          "No Retry"
+        ]
+      },
+      {
+        "from": "Read ripe.probes",
+        "to": "Validate and transform ripe.probes",
+        "relationships": [
+          "success"
+        ]
+      },
+      {
+        "from": "Validate and transform ripe.probes",
+        "to": "Store probe_directory",
+        "relationships": [
+          "success"
+        ]
+      },
+      {
+        "from": "Store ping_results",
+        "to": "Store ping_results",
+        "relationships": [
+          "Failure"
+        ]
+      }
+    ]
+  },
+  "docker": [
+    "ripe-monitoring-metabase-1: Up 25 hours",
+    "ripe-monitoring-metabase-db-1: Up 25 hours (healthy)",
+    "ripe-monitoring-alerts-1: Up 25 hours",
+    "ripe-monitoring-analytics-1: Up 25 hours (healthy)",
+    "ripe-monitoring-collector-1: Up 23 hours",
+    "ripe-monitoring-adminer-1: Up 23 hours",
+    "ripe-monitoring-nifi-1: Up 23 hours",
+    "ripe-monitoring-kafka-ui-1: Up 23 hours",
+    "ripe-monitoring-postgres-1: Up 23 hours (healthy)",
+    "ripe-monitoring-kafka-1: Up 23 hours (healthy)",
+    "ripe-monitoring-clickhouse-1: Up 23 hours (healthy)"
+  ],
+  "note": "Dated evidence. Queries are read-only; counts change during normal operation. No passwords, Telegram recipients or raw measurement payloads are included."
+}
