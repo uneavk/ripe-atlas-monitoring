@@ -2,7 +2,7 @@
 
 [Головна](../README.md) · [Архітектура](ARCHITECTURE.md) · [Запуск](SETUP.md)
 
-Описано всі 83 файлів і 15 папок, які відстежує Git.
+Описано всі 87 файлів і 15 папок, які відстежує Git.
 
 Один Python-образ запускає три різні сервіси: collector, analytics та alerts. Початкові схеми містяться у clickhouse/init.sql та postgres/init.sql. Аналітичні в’ю створюють Python-модулі під час bootstrap. Специфікація Metabase має власний JSON-експорт.
 
@@ -14,7 +14,7 @@
 | `.github/workflows/` | CI та ручний download приватної конфігурації. |
 | `artifacts/` | Історичні докази роботи. |
 | `artifacts/handin/` | Готові матеріали для захисту, сценарій, демонстраційні SQL та контрольний зріз. |
-| `artifacts/handin/screenshots/` | 14 оригіналів реальних екранів Docker, GitHub, Kafka, DBeaver та Metabase від 16.11.2026. |
+| `artifacts/handin/screenshots/` | 16 оригіналів реальних екранів Docker, GitHub, Kafka, NiFi, DBeaver та Metabase від 16.11.2026. |
 | `artifacts/screenshots/` | Збережені екрани Metabase. |
 | `bi/` | Специфікація, експорт і тести дашбордів. |
 | `clickhouse/` | Єдина початкова аналітична схема. |
@@ -75,7 +75,7 @@ GitHub Actions: модульні тести, повнота документац
 
 ### [artifacts/handin/README.md](../artifacts/handin/README.md)
 
-Сценарій командного захисту, призначення матеріалів, запуск і 14 датованих оригіналів скріншотів.
+Сценарій командного захисту, схеми, запуск, пояснення матеріалів і 16 реальних скріншотів.
 
 ### [artifacts/handin/RIPE_Atlas_Defense.pptx](../artifacts/handin/RIPE_Atlas_Defense.pptx)
 
@@ -83,7 +83,11 @@ GitHub Actions: модульні тести, повнота документац
 
 ### [artifacts/handin/RIPE_Atlas_Report.pdf](../artifacts/handin/RIPE_Atlas_Report.pdf)
 
-Звіт на 17 сторінках із 14 реальними скріншотами, схемою фактичної конфігурації NiFi, запуском, БД, KPI, правилами та джерелами. Зріз 16.11.2026.
+Звіт на 18 сторінках: зв’язний опис системи, 2 схеми, 16 реальних скріншотів, KPI, помилки, аналітика та джерела.
+
+### [artifacts/handin/architecture.svg](../artifacts/handin/architecture.svg)
+
+Векторна схема архітектури за README: RIPE → collector → Kafka → NiFi → ClickHouse, операційний стан, BI та Telegram.
 
 ### [artifacts/handin/demo_clickhouse.sql](../artifacts/handin/demo_clickhouse.sql)
 
@@ -92,6 +96,10 @@ GitHub Actions: модульні тести, повнота документац
 ### [artifacts/handin/demo_postgres.sql](../artifacts/handin/demo_postgres.sql)
 
 5 запитів лише на читання: епізоди, підсумки інцидентів, діагностика та стани доставки без адресатів Telegram.
+
+### [artifacts/handin/nifi-flow.svg](../artifacts/handin/nifi-flow.svg)
+
+Векторна схема трьох основних гілок NiFi та спільного маршруту діагностики відхилених подій.
 
 ### [artifacts/handin/verification.json](../artifacts/handin/verification.json)
 
@@ -102,59 +110,67 @@ GitHub Actions: модульні тести, повнота документац
 
 ### [artifacts/handin/screenshots/01-docker-live.jpg](../artifacts/handin/screenshots/01-docker-live.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 2. Docker Desktop: служби проєкту та журнал успішних публікацій collector у ripe.raw. Поточний запуск, 16.11.2026.
+Реальний оригінал скріншота від 16.11.2026. Docker Desktop: служби проєкту та журнал успішних публікацій collector у ripe.raw. Поточний запуск, 16.11.2026.
 
 ### [artifacts/handin/screenshots/02-github-structure.jpg](../artifacts/handin/screenshots/02-github-structure.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 1. Структура та команди перевірки у README на GitHub. Фрагмент реального екрана від 16.11.2026.
+Реальний оригінал скріншота від 16.11.2026. README репозиторію: основні папки та команди перевірки.
 
 ### [artifacts/handin/screenshots/03-kafka-topics.jpg](../artifacts/handin/screenshots/03-kafka-topics.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 3. Теми Kafka UI. Порожня ripe.validated - успадкована тема, поточний потік її не використовує. Фрагмент екрана.
+Реальний оригінал скріншота від 16.11.2026. Теми Kafka UI. Порожня ripe.validated - успадкована тема, поточний потік її не використовує. Фрагмент екрана.
 
 ### [artifacts/handin/screenshots/04-kafka-consumers.jpg](../artifacts/handin/screenshots/04-kafka-consumers.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 4. Окремі consumer groups NiFi та діагностики. STABLE означає стабільне членство в групі. N/A у lag не означає нуль відставання. Фрагмент екрана.
+Реальний оригінал скріншота від 16.11.2026. Окремі consumer groups NiFi та діагностики. STABLE означає стабільне членство в групі. N/A у lag не означає нуль відставання. Фрагмент екрана.
 
 ### [artifacts/handin/screenshots/05-dbeaver-clickhouse-views.jpg](../artifacts/handin/screenshots/05-dbeaver-clickhouse-views.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 5. DBeaver: 8 фізичних таблиць monitoring і результат запиту до каталогу 44 об’єктів ClickHouse.
+Реальний оригінал скріншота від 16.11.2026. DBeaver: 8 фізичних таблиць monitoring і результат запиту до каталогу 44 об’єктів ClickHouse.
 
 ### [artifacts/handin/screenshots/06-dbeaver-ip-versions.jpg](../artifacts/handin/screenshots/06-dbeaver-ip-versions.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 6. data_freshness у DBeaver: чотири джерела, IP-версія, давність даних і фактично спостережувані зонди.
+Реальний оригінал скріншота від 16.11.2026. data_freshness у DBeaver: чотири джерела, IP-версія, давність даних і фактично спостережувані зонди.
 
 ### [artifacts/handin/screenshots/07-dbeaver-retention.jpg](../artifacts/handin/screenshots/07-dbeaver-retention.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 7. Маркери вставок, last_maintenance і перевірка raw_rows_older_than_5h=0. Час маркерів зберігається в UTC.
+Реальний оригінал скріншота від 16.11.2026. Маркери вставок, last_maintenance і перевірка raw_rows_older_than_5h=0. Час маркерів зберігається в UTC.
 
 ### [artifacts/handin/screenshots/08-dbeaver-kpi.jpg](../artifacts/handin/screenshots/08-dbeaver-kpi.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 8. network_hourly_kpi: назва, одиниця та значення KPI останньої завершеної години для K-root IPv4.
+Реальний оригінал скріншота від 16.11.2026. network_hourly_kpi: назва, одиниця та значення KPI останньої завершеної години для K-root IPv4.
 
 ### [artifacts/handin/screenshots/09-metabase-rtt.jpg](../artifacts/handin/screenshots/09-metabase-rtt.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 11. Дашборд поточного стану, картка RTT: окрема лінія для кожної цілі й IP-версії. Дані згруповані по 5 хвилин.
+Реальний оригінал скріншота від 16.11.2026. Дашборд поточного стану, картка RTT: окрема лінія для кожної цілі й IP-версії. Дані згруповані по 5 хвилин.
 
 ### [artifacts/handin/screenshots/10-metabase-daily.jpg](../artifacts/handin/screenshots/10-metabase-daily.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 13. Поденні середні: історія зберігає також давніші вересневі дані.
+Реальний оригінал скріншота від 16.11.2026. Поденні середні: історія зберігає також давніші вересневі дані.
 
 ### [artifacts/handin/screenshots/11-metabase-ipv6-map.jpg](../artifacts/handin/screenshots/11-metabase-ipv6-map.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 14. Карта K-root IPv6, measurement=2001, 47 рядків на момент знімка. Підкладка © OpenStreetMap contributors, Leaflet.
+Реальний оригінал скріншота від 16.11.2026. Карта K-root IPv6, measurement=2001, 47 рядків на момент знімка. Підкладка © OpenStreetMap contributors, Leaflet.
 
 ### [artifacts/handin/screenshots/12-metabase-hourly.jpg](../artifacts/handin/screenshots/12-metabase-hourly.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 12. Завершені години: видимі розриви даних.
+Реальний оригінал скріншота від 16.11.2026. Завершені години: видимі розриви даних.
 
 ### [artifacts/handin/screenshots/13-metabase-incidents.jpg](../artifacts/handin/screenshots/13-metabase-incidents.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 10. Журнал Metabase розрізняє відкриті та відновлені епізоди. Знімок показує реальні спостереження, 16.11.2026.
+Реальний оригінал скріншота від 16.11.2026. Журнал Metabase розрізняє відкриті та відновлені епізоди. Знімок показує реальні спостереження, 16.11.2026.
 
 ### [artifacts/handin/screenshots/14-dbeaver-postgresql.jpg](../artifacts/handin/screenshots/14-dbeaver-postgresql.jpg)
 
-Реальний оригінал скріншота від 16.11.2026. 9. DBeaver/PostgreSQL: реальні епізоди з протоколом, часом Києва, станом і статусом сповіщення.
+Реальний оригінал скріншота від 16.11.2026. DBeaver/PostgreSQL: реальні епізоди з протоколом, часом Києва, станом і статусом сповіщення.
+
+### [artifacts/handin/screenshots/15-nifi-summary.jpg](../artifacts/handin/screenshots/15-nifi-summary.jpg)
+
+Реальний оригінал скріншота від 16.11.2026. NiFi Summary, 16.11.2026: усі 11 процесорів Running. Лічильники In/Out та Read/Write показують роботу за останні 5 хвилин.
+
+### [artifacts/handin/screenshots/16-nifi-canvas.jpg](../artifacts/handin/screenshots/16-nifi-canvas.jpg)
+
+Реальний оригінал скріншота від 16.11.2026. Повне полотно NiFi: три основні рядки та нижня гілка Describe rejected events → RIPE invalid events. Це реальний екран; читабельні назви наведено на схемі попередньої сторінки.
 
 
 ## artifacts/screenshots

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE svg
+  PUBLIC '-//W3C//DTD SVG 1.0//EN'
+  'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'>
+<svg width="960.0" height="380.0" preserveAspectRatio="xMinYMin meet" viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg" version="1.0" fill-rule="evenodd" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<title>...</title>
+	<desc>...</desc>
+	<clipPath id="clip">
+		<rect x="0" y="0" width="960.0" height="380.0"/>
+	</clipPath>
+	<g id="group" transform="scale(1,-1) translate(0,-380)" style="clip-path: url(#clip)">
+		<g transform="">
+			<polyline points="205 332.5, 255 332.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="255 332.5, 247 336.5, 247 328.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="450 332.5, 500 332.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="500 332.5, 492 336.5, 492 328.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="695 332.5, 745 332.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="745 332.5, 737 336.5, 737 328.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="847.5 295, 847.5 230" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="847.5 230, 851.5 238, 843.5 238" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="745 192.5, 695 192.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="695 192.5, 703 196.5, 703 188.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="500 192.5, 450 192.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="450 192.5, 458 196.5, 458 188.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="255 192.5, 205 192.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="205 192.5, 213 196.5, 213 188.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="107.5 155, 107.5 85" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="107.5 85, 111.5 93, 103.5 93" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="597.5 155, 597.5 85" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="597.5 85, 601.5 93, 593.5 93" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="205 192.5, 230 192.5, 230 47.5, 500 47.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="500 47.5, 492 51.5, 492 43.5" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<rect x="10" y="295" width="195" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="54.400146484375" y="343" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,686) scale(1,-1)">RIPE Atlas</text>
+			<text x="29.976074218749986" y="318" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,636) scale(1,-1)">REST / WebSocket</text>
+			<rect x="255" y="295" width="195" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="270.238037109375" y="343" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,686) scale(1,-1)">Python collector</text>
+			<text x="273.0556640625" y="318" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,636) scale(1,-1)">Відбір UA, event_id</text>
+			<rect x="500" y="295" width="195" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="568.90185546875" y="343" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,686) scale(1,-1)">Kafka</text>
+			<text x="539.7998046875" y="318" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,636) scale(1,-1)">Журнал подій</text>
+			<rect x="745" y="295" width="205" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="827.6689453125" y="343" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,686) scale(1,-1)">NiFi</text>
+			<text x="762.6767578125" y="318" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,636) scale(1,-1)">Перевірка, доставка</text>
+			<rect x="10" y="155" width="195" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="46.82250976562499" y="203" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,406) scale(1,-1)">PostgreSQL</text>
+			<text x="32.604003906249986" y="178" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,356) scale(1,-1)">Епізоди, доставка</text>
+			<rect x="255" y="155" width="195" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="322.738037109375" y="203" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,406) scale(1,-1)">Alerts</text>
+			<text x="270.1728515625" y="178" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,356) scale(1,-1)">Правила інцидентів</text>
+			<rect x="500" y="155" width="195" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="540.31396484375" y="203" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,406) scale(1,-1)">ClickHouse</text>
+			<text x="528.7080078125" y="178" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,356) scale(1,-1)">Raw, години, дні</text>
+			<rect x="745" y="155" width="205" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="756.460693359375" y="203" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,406) scale(1,-1)">Analytics gateway</text>
+			<text x="776.29541015625" y="178" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,356) scale(1,-1)">Запис, згортання</text>
+			<rect x="10" y="10" width="195" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="60.81396484375" y="58" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,116) scale(1,-1)">Telegram</text>
+			<text x="57.11669921874999" y="33" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,66) scale(1,-1)">Сповіщення</text>
+			<rect x="500" y="10" width="195" height="75" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="549.64501953125" y="58" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,116) scale(1,-1)">Metabase</text>
+			<text x="522.5029296875" y="33" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,66) scale(1,-1)">Графіки й таблиці</text>
+		</g>
+	</g>
+</svg>

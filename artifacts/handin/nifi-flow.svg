@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE svg
+  PUBLIC '-//W3C//DTD SVG 1.0//EN'
+  'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'>
+<svg width="960.0" height="480.0" preserveAspectRatio="xMinYMin meet" viewBox="0 0 960 480" xmlns="http://www.w3.org/2000/svg" version="1.0" fill-rule="evenodd" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<title>...</title>
+	<desc>...</desc>
+	<clipPath id="clip">
+		<rect x="0" y="0" width="960.0" height="480.0"/>
+	</clipPath>
+	<g id="group" transform="scale(1,-1) translate(0,-480)" style="clip-path: url(#clip)">
+		<g transform="">
+			<polyline points="240 435, 350 435" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="350 435, 342 439, 342 431" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="610 435, 720 435" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="720 435, 712 439, 712 431" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="240 315, 350 315" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="350 315, 342 319, 342 311" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="610 315, 720 315" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="720 315, 712 319, 712 311" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="240 195, 350 195" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="350 195, 342 199, 342 191" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="610 195, 720 195" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="720 195, 712 199, 712 191" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="480 160, 480 85" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="480 85, 484 93, 476 93" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<polyline points="610 50, 720 50" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.8; fill: None; fill-rule: evenodd;"/>
+			<polygon points="720 50, 712 54, 712 46" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: rgb(0%,0%,0%); fill-rule: evenodd;"/>
+			<rect x="5" y="400" width="235" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="53.639892578125" y="443" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,886) scale(1,-1)">Read ripe.raw</text>
+			<text x="60.96777343749999" y="418" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,836) scale(1,-1)">ConsumeKafka</text>
+			<rect x="350" y="400" width="260" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="396.548583984375" y="443" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,886) scale(1,-1)">Validate ripe.raw</text>
+			<text x="424.47509765625" y="418" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,836) scale(1,-1)">ExecuteScript</text>
+			<rect x="720" y="400" width="235" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="745.312255859375" y="443" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,886) scale(1,-1)">Store ping_results</text>
+			<text x="787.48583984375" y="418" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,836) scale(1,-1)">InvokeHTTP</text>
+			<rect x="5" y="280" width="235" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="36.72607421875" y="323" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,646) scale(1,-1)">Read ripe.probes</text>
+			<text x="60.96777343749999" y="298" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,596) scale(1,-1)">ConsumeKafka</text>
+			<rect x="350" y="280" width="260" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="379.634765625" y="323" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,646) scale(1,-1)">Validate ripe.probes</text>
+			<text x="424.47509765625" y="298" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,596) scale(1,-1)">ExecuteScript</text>
+			<rect x="720" y="280" width="235" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="727.8037109375" y="323" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,646) scale(1,-1)">Store probe_directory</text>
+			<text x="787.48583984375" y="298" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,596) scale(1,-1)">InvokeHTTP</text>
+			<rect x="5" y="160" width="235" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="27.974365234375" y="203" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,406) scale(1,-1)">Read probe_status</text>
+			<text x="60.96777343749999" y="178" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,356) scale(1,-1)">ConsumeKafka</text>
+			<rect x="350" y="160" width="260" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="370.883056640625" y="203" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,406) scale(1,-1)">Validate probe_status</text>
+			<text x="424.47509765625" y="178" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,356) scale(1,-1)">ExecuteScript</text>
+			<rect x="720" y="160" width="235" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="739.467529296875" y="203" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,406) scale(1,-1)">Store probe_events</text>
+			<text x="787.48583984375" y="178" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,356) scale(1,-1)">InvokeHTTP</text>
+			<rect x="350" y="15" width="260" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="356.26611328125" y="58" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,116) scale(1,-1)">Describe rejected events</text>
+			<text x="424.47509765625" y="33" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,66) scale(1,-1)">ExecuteScript</text>
+			<rect x="720" y="15" width="235" height="70" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1.4; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="740.63134765625" y="58" style="font-family: Arial-Bold; font-size: 21px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,116) scale(1,-1)">RIPE invalid events</text>
+			<text x="752.46142578125" y="33" style="font-family: Arial; font-size: 18px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,66) scale(1,-1)">PublishKafka → DLQ</text>
+		</g>
+	</g>
+</svg>
